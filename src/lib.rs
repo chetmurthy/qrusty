@@ -3,19 +3,16 @@ extern crate lazy_static;
 
 use num_complex::Complex64;
 use regex::Regex;
-
-pub fn greet(s : &str) {
-    println!("Hello, {}!",  s) ;
-}
+use sprs::{CsMat, TriMat};
 
 #[derive(Debug, PartialEq)]
-pub enum PauliKind {
+pub enum SimplePauli {
     I, X, Y, Z,
 }
 
-use crate::PauliKind::* ;
-impl PauliKind {
-    pub fn new(c : char)-> Result<PauliKind, String> {
+use crate::SimplePauli::* ;
+impl SimplePauli {
+    pub fn new(c : char)-> Result<SimplePauli, String> {
         match c {
             'I' => Ok(I),
             'X' => Ok(X),
@@ -44,16 +41,39 @@ array([ True,  True, False, False])
             I|X => false
         }
     }
+
+    pub fn to_matrix(&self) -> sprs::CsMat<Complex64> {
+        let mut a = TriMat::new((2, 2));
+        match self {
+            I => {
+                a.add_triplet(0, 0, Complex64::new(1.0, 0.0)) ;
+                a.add_triplet(1, 1, Complex64::new(1.0, 0.0)) ;
+            },
+            Z => {
+                a.add_triplet(0, 0, Complex64::new(1.0, 0.0)) ;
+                a.add_triplet(1, 1, Complex64::new(-1.0, 0.0)) ;
+            },
+            X => {
+                a.add_triplet(0, 1, Complex64::new(1.0, 0.0)) ;
+                a.add_triplet(1, 0, Complex64::new(1.0, 0.0)) ;
+            },
+            Y => {
+                a.add_triplet(0, 1, Complex64::new(0.0, -1.0)) ;
+                a.add_triplet(1, 0, Complex64::new(0.0, 1.0)) ;
+            },
+        } ;
+        a.to_csr()
+    }
 }
 
 #[derive(Debug)]
 pub struct Pauli {
     phase : usize,
-    paulis : Vec<PauliKind>,
+    paulis : Vec<SimplePauli>,
 }
 impl Pauli {
 
-    fn parse_label(s : &str) -> Result<(usize, Vec<PauliKind>),  String> {
+    fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  String> {
         lazy_static! {
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
         }
@@ -73,7 +93,7 @@ impl Pauli {
         
         let mut paulis = Vec::new() ;
         for c in paulistr.chars().rev() {
-            paulis.push(PauliKind::new(c)?)
+            paulis.push(SimplePauli::new(c)?)
         }
         if 0 == paulis.len() { Err(String::from("internal error: no paulis")) }
         else { Ok((phase, paulis)) }
@@ -93,7 +113,7 @@ impl Pauli {
 #[cfg(test)]
 mod tests {
     use crate::Pauli ;
-    use crate::PauliKind::* ;
+    use crate::SimplePauli::* ;
     #[test]
     fn parse_labels() {
         assert!(Pauli::parse_label("W").is_err());

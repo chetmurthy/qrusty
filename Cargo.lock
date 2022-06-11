@@ -330,6 +330,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "lazy_static",
+ "ndarray",
  "num-complex 0.4.1",
  "regex",
  "sprs",
