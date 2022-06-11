@@ -25,12 +25,12 @@ impl PauliKind {
 }
 
 pub struct Pauli {
-    coeff : Complex64,
+    phase : usize,
     paulis : Vec<PauliKind>,
 }
 impl Pauli {    
 
-    fn parse_label(s : &str) -> Result<(Complex64, Vec<PauliKind>),  String> {
+    fn parse_label(s : &str) -> Result<(usize, Vec<PauliKind>),  String> {
         lazy_static! {
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
         }
@@ -41,24 +41,24 @@ impl Pauli {
         let paulistr = caps.get(3).map_or("", |m| m.as_str());
 
         let sign = match sign { ""|"+" => Ok(true), "-" => Ok(false), _ => Err("internal error: malformed sign") } ?;
-        let coeff = match imag {
-            "" => Ok(Complex64::new(1.0,  0.0)),
-            "i"|"j" => Ok(Complex64::new(0.0, 1.0)),
-            _ => Err("internal error: malformed imag")
+        let phase : usize = match imag {
+            "" => Ok(0),
+            "i"|"j" => Ok(1),
+            _ => Err("internal error: malformed phase")
         }?;
-        let coeff = if sign { coeff } else { - coeff } ;
+        let phase : usize = if sign { phase } else { phase+2 } ;
         
         let mut paulis = Vec::new() ;
         for c in paulistr.chars() {
             paulis.push(PauliKind::new(c)?)
         }
         if 0 == paulis.len() { Err(String::from("internal error: no paulis")) }
-        else { Ok((coeff, paulis)) }
+        else { Ok((phase, paulis)) }
     }
 
     pub fn new(s : &str) -> Result<Pauli, String> {
-        let (coeff, paulis) = Pauli::parse_label(s)? ;
-        Ok(Pauli{ coeff, paulis })
+        let (phase, paulis) = Pauli::parse_label(s)? ;
+        Ok(Pauli{ phase, paulis })
     }
 
 }
