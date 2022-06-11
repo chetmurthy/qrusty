@@ -112,8 +112,13 @@ impl Pauli {
 
 #[cfg(test)]
 mod tests {
+    use num_complex::Complex64;
+    use ndarray::array ;
+    use ndarray::prelude::*;
+
     use crate::Pauli ;
     use crate::SimplePauli::* ;
+
     #[test]
     fn parse_labels() {
         assert!(Pauli::parse_label("W").is_err());
@@ -197,6 +202,25 @@ phase=2
                              false, false,]);
         }
 
+    }
+    fn simple_pauli_matrices() {
+        let one = Complex64::new(1.0, 0.0) ;
+        let minus_one = Complex64::new(-1.0, 0.0) ;
+        let zero = Complex64::new(0.0, 0.0) ;
+        let i = Complex64::new(0.0, 1.0) ;
+        let minus_i = Complex64::new(0.0, -1.0) ;
+        assert_eq!(I.to_matrix().to_dense(),
+                   array![[one, zero],
+                          [zero, one]]) ;
+        assert_eq!(X.to_matrix().to_dense(),
+                   array![[zero, one],
+                          [one, zero]]) ;
+        assert_eq!(Y.to_matrix().to_dense(),
+                   array![[zero, minus_i],
+                          [i, zero]]) ;
+        assert_eq!(Z.to_matrix().to_dense(),
+                   array![[one, zero],
+                          [zero, minus_one]]) ;
     }
 
 }
