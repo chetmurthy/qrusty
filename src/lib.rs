@@ -36,7 +36,7 @@ impl Pauli {
         lazy_static! {
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
         }
-        let caps = RE.captures(s).unwrap();
+        let caps = RE.captures(s).ok_or("error: malformed label")? ;
 
         let sign = caps.get(1).map_or("", |m| m.as_str());
         let imag = caps.get(2).map_or("", |m| m.as_str());
@@ -71,9 +71,15 @@ mod tests {
     use crate::PauliKind::* ;
     #[test]
     fn parse_labels() {
-        let result = 2 + 2;
+        assert!(Pauli::parse_label("W").is_err());
+        assert!(Pauli::parse_label("").is_err());
+        assert!(Pauli::parse_label("+i").is_err());
         assert_eq!(Pauli::parse_label("I"), Ok( (0 as usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("+I"), Ok( (0 as usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("+iI"), Ok( (1 as usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("+jI"), Ok( (1 as usize, vec![I]) ));
         assert_eq!(Pauli::parse_label("-1jI"), Ok( (3 as usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("-1I"), Ok( (2 as usize, vec![I]) ));
         assert_eq!(Pauli::parse_label("-1jIX"), Ok( (3 as usize, vec![I, X]) ));
     }
 }
