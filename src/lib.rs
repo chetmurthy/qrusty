@@ -115,6 +115,7 @@ mod tests {
     use num_complex::Complex64;
     use ndarray::array ;
     use ndarray::prelude::*;
+    use sprs::*;
 
     use crate::Pauli ;
     use crate::SimplePauli::* ;
@@ -221,6 +222,11 @@ phase=2
         assert_eq!(Z.to_matrix().to_dense(),
                    array![[one, zero],
                           [zero, minus_one]]) ;
+        assert_eq!(kronecker_product(I.to_matrix().view(), X.to_matrix().view()).to_dense(),
+                   array![[zero, one, zero, zero],
+                          [one, zero, zero, zero],
+                          [zero, zero, zero, one],
+                          [zero, zero, one, zero]]) ;
     }
 
 }
