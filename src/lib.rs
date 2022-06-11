@@ -8,6 +8,7 @@ pub fn greet(s : &str) {
     println!("Hello, {}!",  s) ;
 }
 
+#[derive(Debug, PartialEq)]
 pub enum PauliKind {
     I, X, Y, Z,
 }
@@ -24,6 +25,7 @@ impl PauliKind {
     }
 }
 
+#[derive(Debug)]
 pub struct Pauli {
     phase : usize,
     paulis : Vec<PauliKind>,
@@ -62,3 +64,17 @@ impl Pauli {
     }
 
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::Pauli ;
+    use crate::PauliKind::* ;
+    #[test]
+    fn parse_labels() {
+        let result = 2 + 2;
+        assert_eq!(Pauli::parse_label("I"), Ok( (0 as usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("-1jI"), Ok( (3 as usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("-1jIX"), Ok( (3 as usize, vec![I, X]) ));
+    }
+}
+
