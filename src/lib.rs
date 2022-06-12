@@ -16,13 +16,13 @@ pub enum SimplePauli {
 
 use crate::SimplePauli::* ;
 impl SimplePauli {
-    pub fn new(c : char)-> Result<SimplePauli, String> {
+    pub fn new(c : char)-> Result<SimplePauli, &'static str> {
         match c {
             'I' => Ok(I),
             'X' => Ok(X),
             'Y' => Ok(Y),
             'Z' =>  Ok(Z),
-            _ => Err(String::from("internal error: malformed pauli"))
+            _ => Err("internal error: malformed pauli")
         }
     }
 
@@ -79,7 +79,7 @@ pub struct Pauli {
 impl Pauli {
 
     pub fn num_qubits(&self) -> usize { self.paulis.len() }
-    fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  String> {
+    fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
         lazy_static! {
 
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
@@ -102,11 +102,11 @@ impl Pauli {
         for c in paulistr.chars().rev() {
             paulis.push(SimplePauli::new(c)?)
         }
-        if 0 == paulis.len() { Err(String::from("internal error: no paulis")) }
+        if 0 == paulis.len() { Err("internal error: no paulis") }
         else { Ok((phase, paulis)) }
     }
 
-    pub fn new(s : &str) -> Result<Pauli, String> {
+    pub fn new(s : &str) -> Result<Pauli, &'static str> {
         let (base_phase, paulis) = Pauli::parse_label(s)? ;
         Ok(Pauli{ base_phase, paulis })
     }
@@ -188,16 +188,28 @@ pub struct PauliList {
     v : Vec<Pauli>
 }
 impl PauliList {
-    pub fn from_paulis(v : Vec<Pauli>) -> PauliList {
-        PauliList { v }
+    pub fn from_paulis(v : Vec<Pauli>) -> Result<PauliList,  &'static str> {
+        if v.len() == 0 {
+            Err("PauliList::from_paulis: must supply nonempty vector")
+        }
+        else {
+            let n = v[0].num_qubits() ;
+            if ! v.iter().all(|p| p.num_qubits() == n) {
+                Err("PauliList::from_paulis: all paulis must have same #qubits")
+            }
+            else {
+                Ok(PauliList { v })
+            }
+        }
     }
-    pub fn from_labels(l : &Vec<String>) -> Result<PauliList, String> {
+
+    pub fn from_labels(l : &Vec<&str>) -> Result<PauliList, &'static str> {
         let mut v = Vec::new() ;
         for s in l.iter() {
             let p = Pauli::new(s)? ;
             v.push(p) ;
         }
-        Ok(PauliList::from_paulis(v))
+        PauliList::from_paulis(v)
     }
     pub fn len(&self) -> usize {
         self.v.len()
@@ -229,6 +241,11 @@ impl SparsePauliOp {
         }
         else { Err("SparsePauliOp::new: paulis and coeffs must have same length") }
     }
+/*
+    fn to_matrix(&self) -> sprs::CsMatI<Complex64, u64> {
+        
+    }
+*/
 }
 
 #[cfg(test)]
@@ -239,6 +256,7 @@ mod tests {
     use sprs::*;
 
     use crate::Pauli ;
+    use crate::PauliList ;
     use crate::SimplePauli::* ;
 
     #[test]
@@ -385,6 +403,12 @@ phase=2
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
+    }
+
+    #[test]
+    fn pauli_list() {
+        assert!(PauliList::from_labels(&vec!["I"]).is_ok()) ;
+        assert!(PauliList::from_labels(&vec!["I", "II"]).is_err()) ;
     }
 
 }
