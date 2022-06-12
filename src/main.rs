@@ -4,7 +4,18 @@ use qrusty::SimplePauli::* ;
 use ndarray::Array2 ;
 use sprs::* ;
 
+use qrusty::util::* ;
+use qrusty::util::list::* ;
+use qrusty::util::BinaryTreeFold ;
+
 fn main() {
+    let mut bt = BinaryTreeFold::begin(atom(0), cons) ;
+    (1..8).for_each(|n| bt.add(atom(n))) ;
+    let rv = bt.end() ;
+    println!("{}", (*rv).to_string()) ;
+}
+
+fn main2() {
     let p = Pauli::new("Y").unwrap() ;
 
     let sp_mat = p.to_matrix() ;

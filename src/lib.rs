@@ -6,6 +6,9 @@ use num_complex::Complex64;
 use regex::Regex;
 use sprs::{CompressedStorage, CsMatBase, CsMat, TriMat, TriMatI, CsMatI, kronecker_product};
 
+mod accel ;
+pub mod util ;
+
 #[derive(Debug, PartialEq)]
 pub enum SimplePauli {
     I, X, Y, Z,
@@ -67,7 +70,6 @@ array([ True,  True, False, False])
     }
 }
 
-mod accel ;
 
 #[derive(Debug)]
 pub struct Pauli {
