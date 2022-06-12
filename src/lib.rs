@@ -66,6 +66,8 @@ array([ True,  True, False, False])
     }
 }
 
+mod accel ;
+
 #[derive(Debug)]
 pub struct Pauli {
     phase : usize,
