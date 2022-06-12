@@ -75,6 +75,7 @@ pub struct Pauli {
 }
 impl Pauli {
 
+    pub fn num_qubits(&self) -> usize { self.paulis.len() }
     fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  String> {
         lazy_static! {
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
@@ -132,6 +133,16 @@ impl Pauli {
         sp_mat
     }
 
+    pub fn to_matrix_accel(&self) -> sprs::CsMat<Complex64> {
+        let zs = self.zs() ;
+        let xs = self.xs() ;
+        let phase = self.phase() as i64 ;
+        let coeff = Complex64::new(1.0, 0.0) ;
+        let group_phase = false ;
+        let (data, indices, indptr) = accel::rust_make_data(&zs, &xs, coeff, phase, group_phase).expect("accelerated matrix creation failed") ;
+        let dim = 1 << self.num_qubits() ;
+        panic!("unimplemented") ;
+    }
 }
 
 #[cfg(test)]

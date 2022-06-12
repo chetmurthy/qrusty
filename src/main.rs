@@ -4,10 +4,8 @@ use ndarray::Array2 ;
 use sprs::* ;
 
 fn main() {
-    print!("{:?}", I.to_matrix()) ;
-    let mut sp_mat = I.to_matrix() ;
-    sp_mat.scale(Complex64::new(2.0, 0.0)) ;
-    print!("{:?}", sp_mat) ;
+    print!("{:?}\n", I.to_matrix()) ;
+    print!("{:?}\n", kronecker_product(I.to_matrix().view(), X.to_matrix().view())) ;
     
 let a = vec![1, 2, 3, 4];
 

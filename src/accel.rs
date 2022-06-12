@@ -1,8 +1,8 @@
 use num_complex::Complex64;
 use std::time::Instant;
 
-pub fn rust_make_data(z: Vec<bool>,
-                      x: Vec<bool>,
+pub fn rust_make_data(z: &Vec<bool>,
+                      x: &Vec<bool>,
                       coeff: Complex64,
 		      phase: i64,
 		      group_phase: bool
