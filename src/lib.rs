@@ -3,7 +3,7 @@ extern crate lazy_static;
 
 use num_complex::Complex64;
 use regex::Regex;
-use sprs::{CsMat, TriMat, kronecker_product};
+use sprs::{CsMat, TriMat, TriMatI, CsMatI, kronecker_product};
 
 #[derive(Debug, PartialEq)]
 pub enum SimplePauli {
@@ -42,8 +42,8 @@ array([ True,  True, False, False])
         }
     }
 
-    pub fn to_matrix(&self) -> sprs::CsMat<Complex64> {
-        let mut a = TriMat::new((2, 2));
+    pub fn to_matrix(&self) -> sprs::CsMatI<Complex64,  u64> {
+        let mut a = TriMatI::<Complex64, u64>::new((2, 2));
         match self {
             I => {
                 a.add_triplet(0, 0, Complex64::new(1.0, 0.0)) ;
@@ -120,7 +120,7 @@ impl Pauli {
     pub fn xs(&self) -> Vec<bool> { self.paulis.iter().map(|p| p.x()).collect() }
     pub fn zs(&self) -> Vec<bool> { self.paulis.iter().map(|p| p.z()).collect() }
 
-    pub fn to_matrix(&self) -> sprs::CsMat<Complex64> {
+    pub fn to_matrix(&self) -> sprs::CsMatI<Complex64, u64> {
         let l = &(self.paulis) ;
         let mut sp_mat = l[1..]
             .iter()
@@ -133,15 +133,25 @@ impl Pauli {
         sp_mat
     }
 
-    pub fn to_matrix_accel(&self) -> sprs::CsMat<Complex64> {
+    pub fn to_triplets(&self) -> (Vec<Complex64>, Vec<u64>, Vec<u64>) {
         let zs = self.zs() ;
         let xs = self.xs() ;
         let phase = self.phase() as i64 ;
         let coeff = Complex64::new(1.0, 0.0) ;
         let group_phase = false ;
         let (data, indices, indptr) = accel::rust_make_data(&zs, &xs, coeff, phase, group_phase).expect("accelerated matrix creation failed") ;
+        (data, indices, indptr)
+    }
+
+    pub fn to_matrix_accel(&self) -> sprs::CsMatI<Complex64, u64> {
+        let (data, indices, indptr) = self.to_triplets() ;
         let dim = 1 << self.num_qubits() ;
-        panic!("unimplemented") ;
+        let trimat = TriMatI::<Complex64, u64>::from_triplets((dim, dim),
+                                                              indptr,
+                                                              indices,
+                                                              data) ;
+        let sp_mat : CsMatI<Complex64, u64> = trimat.to_csr() ;
+        sp_mat
     }
 }
 
@@ -284,4 +294,12 @@ phase=2
                    kronecker_product(X.to_matrix().view(), I.to_matrix().view()).to_dense()) ;
 
     }
+
+    fn accel() {
+        let p = Pauli::new("I").unwrap() ;
+
+        assert_eq!(p.to_matrix().view().to_dense(),
+                   p.to_matrix_accel().view().to_dense()) ;
+    }
+
 }

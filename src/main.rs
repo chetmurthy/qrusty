@@ -1,17 +1,21 @@
 use num_complex::Complex64;
+use qrusty::* ;
 use qrusty::SimplePauli::* ;
 use ndarray::Array2 ;
 use sprs::* ;
 
 fn main() {
-    print!("{:?}\n", I.to_matrix()) ;
-    print!("{:?}\n", kronecker_product(I.to_matrix().view(), X.to_matrix().view())) ;
+    let p = Pauli::new("I").unwrap() ;
+
+    let sp_mat = p.to_matrix() ;
     
-let a = vec![1, 2, 3, 4];
+    println!("I={:?}\n", sp_mat) ;
 
-// the sum of all of the elements of the array
-    let sum = a[0..a.len()-1].iter().rev().fold(a[a.len()-1], |acc, x| { println!("{}", x); acc + x });
+    let sp_mat_accel = p.to_matrix_accel() ;
 
-assert_eq!(sum, 10);
+    println!("accel I={:?}\n", sp_mat_accel) ;
+
+    let (data, indices, indptr) = p.to_triplets() ;
+    println!("data={:?}\nindices={:?}\nindptr={:?}\n", data, indices, indptr) ;
 
 }

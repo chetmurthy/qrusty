@@ -60,8 +60,8 @@ pub fn rust_make_data(z: &Vec<bool>,
         if timings { println!("BEFORE indptr: {} ms", now.elapsed().as_millis()); }
 
 
-	let mut indptr = vec![0 as u64;dim+1] ;
-	for i in 0..(dim+1) {
+	let mut indptr = vec![0 as u64;dim] ;
+	for i in 0..dim {
 	    indptr[i] = i as u64;
 	}
 
