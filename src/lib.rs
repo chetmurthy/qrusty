@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 
+use std::ops::Index;
 use num_complex::Complex64;
 use regex::Regex;
 use sprs::{CompressedStorage, CsMatBase, CsMat, TriMat, TriMatI, CsMatI, kronecker_product};
@@ -195,6 +196,36 @@ impl PauliList {
             v.push(p) ;
         }
         Ok(PauliList::from_paulis(v))
+    }
+    pub fn len(&self) -> usize {
+        self.v.len()
+    }
+}
+impl Index<isize> for PauliList {
+    type Output = Pauli;
+    fn index(&self, index: isize) -> &Pauli {
+        let self_len = self.v.len() as isize;
+        let idx = (((index % self_len) + self_len) % self_len) as usize;
+        &self.v[idx]
+    }
+}
+
+pub struct SparsePauliOp {
+    paulis : PauliList ,
+    coeffs : Vec<Complex64> ,
+}
+impl SparsePauliOp {
+    fn paulis(&self) -> &PauliList {
+        &self.paulis
+    }
+    fn coeffs(&self) -> &Vec<Complex64> {
+        &self.coeffs
+    }
+    fn new(paulis : PauliList, coeffs : Vec<Complex64>) -> Result<SparsePauliOp,&'static str> {
+        if paulis.len() == coeffs.len() {
+            Ok(SparsePauliOp { paulis, coeffs })
+        }
+        else { Err("SparsePauliOp::new: paulis and coeffs must have same length") }
     }
 }
 
