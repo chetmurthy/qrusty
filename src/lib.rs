@@ -70,7 +70,7 @@ mod accel ;
 
 #[derive(Debug)]
 pub struct Pauli {
-    phase : usize,
+    base_phase : usize,
     paulis : Vec<SimplePauli>,
 }
 impl Pauli {
@@ -103,13 +103,25 @@ impl Pauli {
     }
 
     pub fn new(s : &str) -> Result<Pauli, String> {
-        let (phase, paulis) = Pauli::parse_label(s)? ;
-        Ok(Pauli{ phase, paulis })
+        let (base_phase, paulis) = Pauli::parse_label(s)? ;
+        Ok(Pauli{ base_phase, paulis })
     }
 
-    pub fn phase(&self) -> usize { self.phase }
+    pub fn base_phase(&self) -> usize { self.base_phase }
+    pub fn phase(&self) -> usize {
+        (self.base_phase() + self.paulis.iter().fold(0, |acc, p| match p { Y => 1, _ => 0 })) % 4
+    }
+    pub fn base_coeff(&self) -> Complex64 {
+        match self.base_phase() {
+            0 => Complex64::new(1.0, 0.0),
+            1 => Complex64::new(0.0, 1.0),
+            2 => Complex64::new(-1.0, 0.0),
+            3 => Complex64::new(0.0, -1.0),
+            _ => panic!("internal error: base_phase should never be outside [0..3]")
+        }
+    }
     pub fn coeff(&self) -> Complex64 {
-        match self.phase {
+        match self.phase() {
             0 => Complex64::new(1.0, 0.0),
             1 => Complex64::new(0.0, 1.0),
             2 => Complex64::new(-1.0, 0.0),
@@ -128,7 +140,7 @@ impl Pauli {
                   |acc, x| {
                       kronecker_product(x.to_matrix().view(), acc.view())
                   });
-        sp_mat.scale(self.coeff()) ;
+        sp_mat.scale(self.base_coeff()) ;
         sp_mat
     }
 
@@ -262,6 +274,8 @@ phase=2
         }
 
     }
+
+    #[test]
     fn simple_pauli_matrices() {
         let one = Complex64::new(1.0, 0.0) ;
         let minus_one = Complex64::new(-1.0, 0.0) ;
@@ -287,6 +301,7 @@ phase=2
                           [zero, zero, one, zero]]) ;
     }
 
+    #[test]
     fn pauli_matrices() {
         let one = Complex64::new(1.0, 0.0) ;
         let minus_one = Complex64::new(-1.0, 0.0) ;
@@ -308,8 +323,14 @@ phase=2
 
     }
 
+    #[test]
     fn accel() {
         let p = Pauli::new("I").unwrap() ;
+
+        assert_eq!(p.to_matrix().view().to_dense(),
+                   p.to_matrix_accel().view().to_dense()) ;
+
+        let p = Pauli::new("Y").unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
