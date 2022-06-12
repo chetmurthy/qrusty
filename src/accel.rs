@@ -5,7 +5,8 @@ pub fn rust_make_data(z: &Vec<bool>,
                       x: &Vec<bool>,
                       coeff: Complex64,
 		      phase: i64,
-		      group_phase: bool
+		      group_phase: bool,
+                      for_ffi: bool,
                 ) -> std::result::Result<(Vec<Complex64>, Vec<u64>, Vec<u64>), &'static str> {
     let debug = false ;
     let timings = false ;
@@ -60,8 +61,9 @@ pub fn rust_make_data(z: &Vec<bool>,
         if timings { println!("BEFORE indptr: {} ms", now.elapsed().as_millis()); }
 
 
-	let mut indptr = vec![0 as u64;dim] ;
-	for i in 0..dim {
+        let vecsize = if for_ffi { dim+1 } else { dim } ;
+	let mut indptr = vec![0 as u64;vecsize] ;
+	for i in 0..vecsize {
 	    indptr[i] = i as u64;
 	}
 

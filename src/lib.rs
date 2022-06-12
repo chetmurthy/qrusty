@@ -139,7 +139,17 @@ impl Pauli {
         let phase = self.phase() as i64 ;
         let coeff = Complex64::new(1.0, 0.0) ;
         let group_phase = false ;
-        let (data, indices, indptr) = accel::rust_make_data(&zs, &xs, coeff, phase, group_phase).expect("accelerated matrix creation failed") ;
+        let (data, indices, indptr) = accel::rust_make_data(&zs, &xs, coeff, phase, group_phase, false).expect("accelerated matrix creation failed") ;
+        (data, indices, indptr)
+    }
+
+    pub fn to_triplets_ffi(&self) -> (Vec<Complex64>, Vec<u64>, Vec<u64>) {
+        let zs = self.zs() ;
+        let xs = self.xs() ;
+        let phase = self.phase() as i64 ;
+        let coeff = Complex64::new(1.0, 0.0) ;
+        let group_phase = false ;
+        let (data, indices, indptr) = accel::rust_make_data(&zs, &xs, coeff, phase, group_phase, true).expect("accelerated matrix creation failed") ;
         (data, indices, indptr)
     }
 
