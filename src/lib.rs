@@ -78,6 +78,7 @@ impl Pauli {
     pub fn num_qubits(&self) -> usize { self.paulis.len() }
     fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  String> {
         lazy_static! {
+
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
         }
         let caps = RE.captures(s).ok_or("error: malformed label")? ;
@@ -180,6 +181,23 @@ impl Pauli {
     }
 }
 
+pub struct PauliList {
+    v : Vec<Pauli>
+}
+impl PauliList {
+    pub fn from_paulis(v : Vec<Pauli>) -> PauliList {
+        PauliList { v }
+    }
+    pub fn from_labels(l : &Vec<String>) -> Result<PauliList, String> {
+        let mut v = Vec::new() ;
+        for s in l.iter() {
+            let p = Pauli::new(s)? ;
+            v.push(p) ;
+        }
+        Ok(PauliList::from_paulis(v))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use num_complex::Complex64;
@@ -195,14 +213,14 @@ mod tests {
         assert!(Pauli::parse_label("W").is_err());
         assert!(Pauli::parse_label("").is_err());
         assert!(Pauli::parse_label("+i").is_err());
-        assert_eq!(Pauli::parse_label("I"), Ok( (0 as usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("+I"), Ok( (0 as usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("+iI"), Ok( (1 as usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("+jI"), Ok( (1 as usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("-1jI"), Ok( (3 as usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("-1I"), Ok( (2 as usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("-1jIX"), Ok( (3 as usize, vec![X, I]) ));
-        assert_eq!(Pauli::parse_label("IXYZ"), Ok( (0 as usize, vec![Z, Y, X, I]) ));
+        assert_eq!(Pauli::parse_label("I"), Ok( (0_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("+I"), Ok( (0_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("+iI"), Ok( (1_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("+jI"), Ok( (1_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("-1jI"), Ok( (3_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("-1I"), Ok( (2_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label("-1jIX"), Ok( (3_usize, vec![X, I]) ));
+        assert_eq!(Pauli::parse_label("IXYZ"), Ok( (0_usize, vec![Z, Y, X, I]) ));
 
 /*
 >>> (Pauli("I").z, Pauli("I").x)
@@ -244,7 +262,7 @@ array([ True,  True, False, False])
         }
 
 /*
-Pauli::parse_label("-IIIIIIIIIIIIIIIIIIYXXY"), Ok(2 as usize, vec![ IIIIIIIIIIIIIIIIIIYXXY ]
+Pauli::parse_label("-IIIIIIIIIIIIIIIIIIYXXY"), Ok(2_usize, vec![ IIIIIIIIIIIIIIIIIIYXXY ]
 z=[ True False False  True False False False False False False False False
  False False False False False False False False False False]
 x=[ True  True  True  True False False False False False False False False
@@ -256,7 +274,7 @@ phase=2
             let p = Pauli::new("-IIIIIIIIIIIIIIIIIIYXXY") ;
             assert!(p.is_ok()) ;
             let p = p.unwrap() ;
-            assert_eq!(p.phase(), 2 as usize) ;
+            assert_eq!(p.phase(), 2_usize) ;
             assert_eq!(p.zs(),
                        vec![ true, false, false,  true,
                              false, false, false, false,
