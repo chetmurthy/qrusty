@@ -3,7 +3,7 @@ extern crate lazy_static;
 
 use num_complex::Complex64;
 use regex::Regex;
-use sprs::{CsMat, TriMat, TriMatI, CsMatI, kronecker_product};
+use sprs::{CompressedStorage, CsMatBase, CsMat, TriMat, TriMatI, CsMatI, kronecker_product};
 
 #[derive(Debug, PartialEq)]
 pub enum SimplePauli {
@@ -126,7 +126,6 @@ impl Pauli {
             .iter()
             .fold(l[0].to_matrix(),
                   |acc, x| {
-                      println!("{:?}", x);
                       kronecker_product(x.to_matrix().view(), acc.view())
                   });
         sp_mat.scale(self.coeff()) ;
@@ -154,14 +153,18 @@ impl Pauli {
     }
 
     pub fn to_matrix_accel(&self) -> sprs::CsMatI<Complex64, u64> {
-        let (data, indices, indptr) = self.to_triplets() ;
+        let (data, indices, indptr) = self.to_triplets_ffi() ;
         let dim = 1 << self.num_qubits() ;
-        let trimat = TriMatI::<Complex64, u64>::from_triplets((dim, dim),
-                                                              indptr,
-                                                              indices,
-                                                              data) ;
-        let sp_mat : CsMatI<Complex64, u64> = trimat.to_csr() ;
-        sp_mat
+
+        unsafe {
+            CsMatI::<Complex64, u64, u64>::new_unchecked(
+                CompressedStorage::CSR,
+                (dim, dim),
+                indptr,
+                indices,
+                data,
+            )
+        }
     }
 }
 
