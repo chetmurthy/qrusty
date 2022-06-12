@@ -3,7 +3,7 @@ extern crate lazy_static;
 
 use num_complex::Complex64;
 use regex::Regex;
-use sprs::{CsMat, TriMat};
+use sprs::{CsMat, TriMat, kronecker_product};
 
 #[derive(Debug, PartialEq)]
 pub enum SimplePauli {
@@ -105,8 +105,30 @@ impl Pauli {
     }
 
     pub fn phase(&self) -> usize { self.phase }
+    pub fn coeff(&self) -> Complex64 {
+        match self.phase {
+            0 => Complex64::new(1.0, 0.0),
+            1 => Complex64::new(0.0, 1.0),
+            2 => Complex64::new(-1.0, 0.0),
+            3 => Complex64::new(0.0, -1.0),
+            _ => panic!("internal error: phase should never be outside [0..3]")
+        }
+    }
     pub fn xs(&self) -> Vec<bool> { self.paulis.iter().map(|p| p.x()).collect() }
     pub fn zs(&self) -> Vec<bool> { self.paulis.iter().map(|p| p.z()).collect() }
+
+    pub fn to_matrix(&self) -> sprs::CsMat<Complex64> {
+        let l = &(self.paulis) ;
+        let mut sp_mat = l[1..]
+            .iter()
+            .fold(l[0].to_matrix(),
+                  |acc, x| {
+                      println!("{:?}", x);
+                      kronecker_product(x.to_matrix().view(), acc.view())
+                  });
+        sp_mat.scale(self.coeff()) ;
+        sp_mat
+    }
 
 }
 
@@ -229,5 +251,24 @@ phase=2
                           [zero, zero, one, zero]]) ;
     }
 
-}
+    fn pauli_matrices() {
+        let one = Complex64::new(1.0, 0.0) ;
+        let minus_one = Complex64::new(-1.0, 0.0) ;
+        let zero = Complex64::new(0.0, 0.0) ;
+        let i = Complex64::new(0.0, 1.0) ;
+        let minus_i = Complex64::new(0.0, -1.0) ;
 
+        let p = Pauli::new("IX") ;
+        assert!(p.is_ok()) ;
+        let p = p.unwrap() ;
+        assert_eq!(p.to_matrix().view().to_dense(),
+                   kronecker_product(I.to_matrix().view(), X.to_matrix().view()).to_dense()) ;
+
+        let p = Pauli::new("XI") ;
+        assert!(p.is_ok()) ;
+        let p = p.unwrap() ;
+        assert_eq!(p.to_matrix().view().to_dense(),
+                   kronecker_product(X.to_matrix().view(), I.to_matrix().view()).to_dense()) ;
+
+    }
+}
