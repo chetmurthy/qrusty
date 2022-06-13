@@ -262,6 +262,25 @@ impl SparsePauliOp {
         sum
     }
 
+    pub fn to_matrix_fast(&self) -> sprs::CsMatI<Complex64, u64> {
+        fn addmul(l: (Complex64, sprs::CsMatI<Complex64, u64>),
+                  r: (Complex64, sprs::CsMatI<Complex64, u64>))
+                  -> (Complex64, sprs::CsMatI<Complex64, u64>) {
+            (Complex64::new(1.0,  0.0),
+             sprs::binop::csmat_binop(l.1.view(), r.1.view(), |x,y| l.0 * x + r.0 * y))
+        }
+
+        let p0 = self.paulis[0].to_matrix().clone() ;
+        let coeff0 = self.coeffs[0] ;
+        let mut bt = util::BinaryTreeFold::begin((coeff0, p0), |x,y| addmul(x,y)) ;
+
+        for i in 1..self.paulis.len() {
+            let p = self.paulis[i as isize].to_matrix() ;
+            let coeff = self.coeffs[i] ;
+            bt.add((coeff, p)) ;
+        }
+        bt.end().1
+    }
 }
 
 #[cfg(test)]
@@ -439,7 +458,11 @@ phase=2
             PauliList::from_labels(&vec!["I","X"]).unwrap(),
             vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]) ;
         assert!(spop.is_ok()) ;
-        assert_eq!(spop.unwrap().to_matrix().to_dense(),
+        let spop = spop.unwrap() ;
+        assert_eq!(spop.to_matrix().to_dense(),
+                   array![[one, two],
+                          [two, one]]) ;
+        assert_eq!(spop.to_matrix_fast().to_dense(),
                    array![[one, two],
                           [two, one]]) ;
     }
