@@ -241,6 +241,7 @@ impl SparsePauliOp {
     pub fn paulis(&self) -> &PauliList {
         &self.paulis
     }
+    pub fn num_qubits(&self) -> usize { self.paulis[0].num_qubits() }
     pub fn coeffs(&self) -> &Vec<Complex64> {
         &self.coeffs
     }
