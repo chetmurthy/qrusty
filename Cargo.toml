@@ -17,5 +17,5 @@ ndarray = "0.15.3"
 criterion = "0.3"
 
 [[bench]]
-name = "my_benchmark"
+name = "bench1"
 harness = false
