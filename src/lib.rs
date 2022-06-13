@@ -262,7 +262,7 @@ impl SparsePauliOp {
         sum
     }
 
-    pub fn to_matrix_fast(&self) -> sprs::CsMatI<Complex64, u64> {
+    pub fn to_matrix_binary(&self) -> sprs::CsMatI<Complex64, u64> {
         fn addmul(l: (Complex64, sprs::CsMatI<Complex64, u64>),
                   r: (Complex64, sprs::CsMatI<Complex64, u64>))
                   -> (Complex64, sprs::CsMatI<Complex64, u64>) {
@@ -462,7 +462,7 @@ phase=2
         assert_eq!(spop.to_matrix().to_dense(),
                    array![[one, two],
                           [two, one]]) ;
-        assert_eq!(spop.to_matrix_fast().to_dense(),
+        assert_eq!(spop.to_matrix_binary().to_dense(),
                    array![[one, two],
                           [two, one]]) ;
     }
