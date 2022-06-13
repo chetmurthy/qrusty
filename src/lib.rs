@@ -113,7 +113,7 @@ impl Pauli {
 
     pub fn base_phase(&self) -> usize { self.base_phase }
     pub fn phase(&self) -> usize {
-        (self.base_phase() + self.paulis.iter().fold(0, |acc, p| match p { Y => 1, _ => 0 })) % 4
+        (self.base_phase() + self.paulis.iter().fold(0, |acc, p| acc + match p { Y => 1, _ => 0 })) % 4
     }
     pub fn base_coeff(&self) -> Complex64 {
         match self.base_phase() {
@@ -380,7 +380,8 @@ phase=2
             let p = Pauli::new("-IIIIIIIIIIIIIIIIIIYXXY") ;
             assert!(p.is_ok()) ;
             let p = p.unwrap() ;
-            assert_eq!(p.phase(), 2_usize) ;
+            assert_eq!(p.base_phase(), 2_usize) ;
+            assert_eq!(p.phase(), 0_usize) ;
             assert_eq!(p.zs(),
                        vec![ true, false, false,  true,
                              false, false, false, false,
@@ -455,6 +456,11 @@ phase=2
                    p.to_matrix_accel().view().to_dense()) ;
 
         let p = Pauli::new("Y").unwrap() ;
+
+        assert_eq!(p.to_matrix().view().to_dense(),
+                   p.to_matrix_accel().view().to_dense()) ;
+
+        let p = Pauli::new("YY").unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
