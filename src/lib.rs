@@ -79,7 +79,7 @@ pub struct Pauli {
 impl Pauli {
 
     pub fn num_qubits(&self) -> usize { self.paulis.len() }
-    fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
+    fn parse_label(s : &String) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
         lazy_static! {
 
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
@@ -106,7 +106,7 @@ impl Pauli {
         else { Ok((phase, paulis)) }
     }
 
-    pub fn new(s : &str) -> Result<Pauli, &'static str> {
+    pub fn new(s : &String) -> Result<Pauli, &'static str> {
         let (base_phase, paulis) = Pauli::parse_label(s)? ;
         Ok(Pauli{ base_phase, paulis })
     }
@@ -203,7 +203,7 @@ impl PauliList {
         }
     }
 
-    pub fn from_labels(l : &Vec<&str>) -> Result<PauliList, &'static str> {
+    pub fn from_labels(l : &Vec<&String>) -> Result<PauliList, &'static str> {
         let mut v = Vec::new() ;
         for s in l.iter() {
             let p = Pauli::new(s)? ;
@@ -316,17 +316,17 @@ mod tests {
 
     #[test]
     fn parse_labels() {
-        assert!(Pauli::parse_label("W").is_err());
-        assert!(Pauli::parse_label("").is_err());
-        assert!(Pauli::parse_label("+i").is_err());
-        assert_eq!(Pauli::parse_label("I"), Ok( (0_usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("+I"), Ok( (0_usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("+iI"), Ok( (1_usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("+jI"), Ok( (1_usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("-1jI"), Ok( (3_usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("-1I"), Ok( (2_usize, vec![I]) ));
-        assert_eq!(Pauli::parse_label("-1jIX"), Ok( (3_usize, vec![X, I]) ));
-        assert_eq!(Pauli::parse_label("IXYZ"), Ok( (0_usize, vec![Z, Y, X, I]) ));
+        assert!(Pauli::parse_label(&"W".to_string()).is_err());
+        assert!(Pauli::parse_label(&"".to_string()).is_err());
+        assert!(Pauli::parse_label(&"+i".to_string()).is_err());
+        assert_eq!(Pauli::parse_label(&"I".to_string()), Ok( (0_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label(&"+I".to_string()), Ok( (0_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label(&"+iI".to_string()), Ok( (1_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label(&"+jI".to_string()), Ok( (1_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label(&"-1jI".to_string()), Ok( (3_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label(&"-1I".to_string()), Ok( (2_usize, vec![I]) ));
+        assert_eq!(Pauli::parse_label(&"-1jIX".to_string()), Ok( (3_usize, vec![X, I]) ));
+        assert_eq!(Pauli::parse_label(&"IXYZ".to_string()), Ok( (0_usize, vec![Z, Y, X, I]) ));
 
 /*
 >>> (Pauli("I").z, Pauli("I").x)
@@ -358,7 +358,7 @@ array([ True,  True, False, False])
 */
 
         {
-            let p = Pauli::new("IXYZ") ;
+            let p = Pauli::new(&"IXYZ".to_string()) ;
             assert!(p.is_ok()) ;
             let p = p.unwrap() ;
             assert_eq!(p.xs(),
@@ -377,7 +377,7 @@ phase=2
 
 */
         {
-            let p = Pauli::new("-IIIIIIIIIIIIIIIIIIYXXY") ;
+            let p = Pauli::new(&"-IIIIIIIIIIIIIIIIIIYXXY".to_string()) ;
             assert!(p.is_ok()) ;
             let p = p.unwrap() ;
             assert_eq!(p.base_phase(), 2_usize) ;
@@ -434,13 +434,13 @@ phase=2
         let i = Complex64::new(0.0, 1.0) ;
         let minus_i = Complex64::new(0.0, -1.0) ;
 
-        let p = Pauli::new("IX") ;
+        let p = Pauli::new(&"IX".to_string()) ;
         assert!(p.is_ok()) ;
         let p = p.unwrap() ;
         assert_eq!(p.to_matrix().view().to_dense(),
                    kronecker_product(I.to_matrix().view(), X.to_matrix().view()).to_dense()) ;
 
-        let p = Pauli::new("XI") ;
+        let p = Pauli::new(&"XI".to_string()) ;
         assert!(p.is_ok()) ;
         let p = p.unwrap() ;
         assert_eq!(p.to_matrix().view().to_dense(),
@@ -450,17 +450,17 @@ phase=2
 
     #[test]
     fn accel() {
-        let p = Pauli::new("I").unwrap() ;
+        let p = Pauli::new(&"I".to_string()).unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
 
-        let p = Pauli::new("Y").unwrap() ;
+        let p = Pauli::new(&"Y".to_string()).unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
 
-        let p = Pauli::new("YY").unwrap() ;
+        let p = Pauli::new(&"YY".to_string()).unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
@@ -468,8 +468,8 @@ phase=2
 
     #[test]
     fn pauli_list() {
-        assert!(PauliList::from_labels(&vec!["I"]).is_ok()) ;
-        assert!(PauliList::from_labels(&vec!["I", "II"]).is_err()) ;
+        assert!(PauliList::from_labels(&vec![&"I".to_string()]).is_ok()) ;
+        assert!(PauliList::from_labels(&vec![&"I".to_string(), &"II".to_string()]).is_err()) ;
     }
 
     #[test]
@@ -482,7 +482,7 @@ phase=2
         let minus_i = Complex64::new(0.0, -1.0) ;
 
         let spop = SparsePauliOp::new(
-            PauliList::from_labels(&vec!["I","X"]).unwrap(),
+            PauliList::from_labels(&vec![&"I".to_string(),&"X".to_string()]).unwrap(),
             vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]) ;
         assert!(spop.is_ok()) ;
         let spop = spop.unwrap() ;
