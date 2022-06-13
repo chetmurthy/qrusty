@@ -223,29 +223,45 @@ impl Index<isize> for PauliList {
         &self.v[idx]
     }
 }
-
+/*
+impl Index<usize> for PauliList {
+    type Output = Pauli;
+    fn index(&self, index: usize) -> &Pauli {
+        let self_len = self.v.len() as usize;
+        let idx = (((index % self_len) + self_len) % self_len) as usize;
+        &self.v[idx]
+    }
+}
+*/
 pub struct SparsePauliOp {
     paulis : PauliList ,
     coeffs : Vec<Complex64> ,
 }
 impl SparsePauliOp {
-    fn paulis(&self) -> &PauliList {
+    pub fn paulis(&self) -> &PauliList {
         &self.paulis
     }
-    fn coeffs(&self) -> &Vec<Complex64> {
+    pub fn coeffs(&self) -> &Vec<Complex64> {
         &self.coeffs
     }
-    fn new(paulis : PauliList, coeffs : Vec<Complex64>) -> Result<SparsePauliOp,&'static str> {
+    pub fn new(paulis : PauliList, coeffs : Vec<Complex64>) -> Result<SparsePauliOp,&'static str> {
         if paulis.len() == coeffs.len() {
             Ok(SparsePauliOp { paulis, coeffs })
         }
         else { Err("SparsePauliOp::new: paulis and coeffs must have same length") }
     }
-/*
-    fn to_matrix(&self) -> sprs::CsMatI<Complex64, u64> {
-        
+
+    pub fn to_matrix(&self) -> sprs::CsMatI<Complex64, u64> {
+        let mut sum = self.paulis[0].to_matrix().clone() ;
+        sum.scale(self.coeffs[0]) ;
+        for i in 1..self.paulis.len() {
+            let p = self.paulis[i as isize].to_matrix() ;
+            let coeff = self.coeffs[i] ;
+            sum = sprs::binop::csmat_binop(sum.view(), p.view(), |x,y| x + coeff * y) ;
+        }
+        sum
     }
-*/
+
 }
 
 #[cfg(test)]
@@ -255,9 +271,8 @@ mod tests {
     use ndarray::prelude::*;
     use sprs::*;
 
-    use crate::Pauli ;
-    use crate::PauliList ;
     use crate::SimplePauli::* ;
+    use crate::* ;
 
     #[test]
     fn parse_labels() {
@@ -409,6 +424,24 @@ phase=2
     fn pauli_list() {
         assert!(PauliList::from_labels(&vec!["I"]).is_ok()) ;
         assert!(PauliList::from_labels(&vec!["I", "II"]).is_err()) ;
+    }
+
+    #[test]
+    fn sparse_pauli_op() {
+        let one = Complex64::new(1.0, 0.0) ;
+        let two = 2.0 * one ;
+        let minus_one = Complex64::new(-1.0, 0.0) ;
+        let zero = Complex64::new(0.0, 0.0) ;
+        let i = Complex64::new(0.0, 1.0) ;
+        let minus_i = Complex64::new(0.0, -1.0) ;
+
+        let spop = SparsePauliOp::new(
+            PauliList::from_labels(&vec!["I","X"]).unwrap(),
+            vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]) ;
+        assert!(spop.is_ok()) ;
+        assert_eq!(spop.unwrap().to_matrix().to_dense(),
+                   array![[one, two],
+                          [two, one]]) ;
     }
 
 }
