@@ -1,4 +1,110 @@
 use std::boxed::Box ;
+use regex::Regex;
+use num_complex::Complex64;
+
+static DIGIT : &str = "[0-9]" ;
+static  NZDIGIT : &str = "[1-9]" ;
+
+fn unamp(l : Vec<&String>) -> Vec<String> {
+    l.iter().map(|s| String::from(s.clone())).collect()
+}
+
+fn conc(l : Vec<&String>) -> String {
+    let rv = unamp(l).join("") ;
+    format!("(?:{})", rv)
+}
+
+fn disj(l : Vec<&String>) -> String {
+    let rv = unamp(l).join("|") ;
+    format!("(?:{})", rv)
+}
+
+fn top(s : &String) -> String {
+    format!("^{}$", s)
+}
+fn capt(s : &String) -> String {
+    format!("({})", s)
+}
+fn star(s : &String) -> String {
+    format!("(?:{})*", s)
+}
+fn plus(s : &String) -> String {
+    format!("(?:{})+", s)
+}
+fn opt(s : &String) -> String {
+    format!("(?:{})?", s)
+}
+
+lazy_static! {
+    /*
+    let int = [%sedlex.regexp? '0' | ( ('1'..'9') , (Star digit) )]
+    let frac = [%sedlex.regexp? '.' , (Star digit)]
+    let ne_frac = [%sedlex.regexp? '.' , (Plus digit)]
+    let exp = [%sedlex.regexp? ('e' | 'E') , (Opt ('-' | '+')) , (Plus digit)]
+    let decimal_float_number = [%sedlex.regexp? (Opt '-') , ((int , (Opt frac) , (Opt exp)) | (ne_frac, Opt exp))]
+    let json_number = [%sedlex.regexp? (Opt '-') , int, Opt ne_frac, Opt exp]
+     */
+
+    static ref UnsignedFloat : String = {
+        let digit = DIGIT.to_string() ;
+        let nzdigit = NZDIGIT.to_string() ;
+        let int = disj(vec![&"0".to_string(), &conc(vec![&nzdigit, &star(&digit)])]) ;
+        let frac = conc(vec![&"\\.".to_string(), &star(&digit)]) ;
+        let ne_frac = conc(vec![&"\\.".to_string(), &plus(&digit)]) ;
+        let exp = conc(vec![&"[eE]".to_string(), &opt(&"[-+]".to_string()), &plus(&digit)]) ;
+        let unsigned_float = disj(vec![&conc(vec![&int , &opt(&frac) , &opt(&exp)]),
+                                       &conc(vec![&ne_frac, &opt(&exp)])]) ;
+        let signed_float = conc(vec![ &opt(&"[-+]".to_string()), &unsigned_float ]) ;
+        unsigned_float
+    } ;
+    static ref SignedFloat : String = {
+        let digit = DIGIT.to_string() ;
+        let signed_float = conc(vec![ &opt(&"[-+]".to_string()), &UnsignedFloat ]) ;
+        signed_float
+    } ;
+
+
+    static ref Complex : String = {
+        let spaces = star(&" ".to_string()) ;
+        /* {SFLOAT} (({SFLOAT}J)? | J)? */
+        let complex = conc(vec![&spaces,
+                                &capt(&opt(&SignedFloat)),
+                                &spaces,
+                                &opt(&disj(vec![
+                                    &conc(vec![&capt(&SignedFloat), &"j".to_string()]),
+                                    &"j".to_string()
+                                ]))]) ;
+        complex
+    } ;
+
+
+    static ref FloatRE : Regex = {
+        Regex::new(&top(&SignedFloat)).unwrap()
+    } ;
+    static ref ComplexRE : Regex = {
+        Regex::new(&top(&Complex)).unwrap()
+    } ;
+}
+
+pub fn float64_from_string(s : &str) -> Result<f64,&str> {
+    let caps = FloatRE.captures(s).ok_or("error: malformed float")? ;
+    
+    let s = caps.get(0).map_or("", |m| m.as_str());
+
+    let n : f64 = s.parse().unwrap() ;
+    Ok(n)
+}
+
+pub fn complex64_from_string(s : &str) -> Result<Complex64,&str> {
+    let caps = ComplexRE.captures(s).ok_or("error: malformed complex")? ;
+    
+    let sreal = caps.get(1).map_or("", |m| m.as_str());
+    let simag = caps.get(2).map_or("0", |m| m.as_str());
+    let real : f64 = sreal.parse().unwrap() ;
+    let imag : f64 = simag.parse().unwrap() ;
+
+    Ok(Complex64::new(real, imag))
+}
 
 pub struct BinaryTreeFold<T> {
     stk : Vec<(usize, T)>,
@@ -118,6 +224,7 @@ pub mod list {
 
 #[cfg(test)]
 mod tests {
+    use num_complex::Complex64;
     use crate::util::BinaryTreeFold ;
     use crate::util::list::* ;
 
@@ -136,5 +243,21 @@ mod tests {
         let rv = bt.end() ;
         assert_eq!("(((0 1) (2 3)) ((4 5) (6 7)))",
                    (*rv).to_string()) ;
+    }
+
+    #[test]
+    fn test_parse_f64() {
+        assert_eq!(crate::util::float64_from_string("0"), Ok(0.0)) ;
+        assert_eq!(crate::util::float64_from_string("1.0"), Ok(1.0)) ;
+        assert!(crate::util::float64_from_string("foo").is_err()) ;
+    }
+
+    #[test]
+    fn test_parse_complex64() {
+        assert_eq!(crate::util::complex64_from_string("0"), Ok(Complex64::new(0.0,  0.0))) ;
+        assert_eq!(crate::util::complex64_from_string("1.0"), Ok(Complex64::new(1.0,  0.0))) ;
+        assert!(crate::util::complex64_from_string("foo").is_err()) ;
+        assert_eq!(crate::util::complex64_from_string("1+2j"), Ok(Complex64::new(1.0,  2.0))) ;
+        assert_eq!(crate::util::complex64_from_string("1-2j"), Ok(Complex64::new(1.0,  -2.0))) ;
     }
 }

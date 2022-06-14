@@ -81,7 +81,6 @@ impl Pauli {
     pub fn num_qubits(&self) -> usize { self.paulis.len() }
     fn parse_label(s : &String) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
         lazy_static! {
-
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
         }
         let caps = RE.captures(s).ok_or("error: malformed label")? ;

@@ -20,3 +20,7 @@ criterion = "0.3"
 [[bench]]
 name = "bench1"
 harness = false
+
+[[bench]]
+name = "big_bench"
+harness = false
