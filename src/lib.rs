@@ -280,7 +280,9 @@ impl SparsePauliOp {
             let coeff = self.coeffs[i] ;
             bt.add((coeff, p)) ;
         }
-        bt.end().1
+        let mut p = bt.end() ;
+        p.1.scale(p.0) ;
+        p.1
     }
 
     pub fn to_matrix_accel(&self) -> sprs::CsMatI<Complex64, u64> {
@@ -300,7 +302,9 @@ impl SparsePauliOp {
             let coeff = self.coeffs[i] ;
             bt.add((coeff, p)) ;
         }
-        bt.end().1
+        let mut p = bt.end() ;
+        p.1.scale(p.0) ;
+        p.1
     }
 }
 
