@@ -242,6 +242,7 @@ pub struct SparsePauliOp {
     paulis : PauliList ,
     coeffs : Vec<Complex64> ,
 }
+use rayon::prelude::*;
 impl SparsePauliOp {
     pub fn paulis(&self) -> &PauliList {
         &self.paulis
@@ -317,8 +318,8 @@ impl SparsePauliOp {
         let  dim = 1 << self.paulis.num_qubits() ;
 
         self.paulis.iter()
-            .map(|p| p.to_matrix())
             .zip(self.coeffs.iter().map(|c| c.clone()))
+            .map(|(p,c)| (p.to_matrix(),c))
             .reduce(|(a,acoeff),(b,bcoeff)| {
                 (sprs::binop::csmat_binop(a.view(), b.view(), |x,y| acoeff * x + bcoeff * y),
                  Complex64::new(1.0, 0.0))
@@ -326,6 +327,33 @@ impl SparsePauliOp {
             .unwrap().0
     }
 
+    pub fn to_matrix_rayon(&self) -> sprs::CsMatI<Complex64, u64> {
+
+        let  dim = 1 << self.paulis.num_qubits() ;
+
+        let pairs : Vec< (&Pauli, Complex64) > =
+            self.paulis.iter()
+            .zip(self.coeffs.iter())
+            .map(|(p,c)| (p,*c))
+            .collect();
+
+        pairs.par_iter()
+            .map(|(p,c)| {
+                let mut m = p.to_matrix() ;
+                m.scale(*c) ;
+                Some(m)
+            })
+            .reduce(|| None,
+                    |l,r| {
+                        match (l,r) {
+                            (None, None) => None,
+                            (None,  Some(r)) => Some(r),
+                            (Some(l), None) => Some(l),
+                            (Some(l), Some(r)) => Some(&l + &r)
+                        }
+                    })
+            .unwrap()
+    }
 
 }
 
@@ -521,6 +549,9 @@ phase=2
                    array![[one, two],
                           [two, one]]) ;
         assert_eq!(spop.to_matrix_reduce().to_dense(),
+                   array![[one, two],
+                          [two, one]]) ;
+        assert_eq!(spop.to_matrix_rayon().to_dense(),
                    array![[one, two],
                           [two, one]]) ;
     }

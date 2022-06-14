@@ -10,11 +10,7 @@ use qrusty::util::list::* ;
 use qrusty::util::BinaryTreeFold ;
 
 fn main() {
-    let spop = SparsePauliOp::new(
-        PauliList::from_labels(&vec![&"I".to_string(),&"X".to_string()]).unwrap(),
-        vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]).unwrap() ;
-    let sp_mat = spop.to_matrix() ;
-    println!("{}",sp_mat.to_dense()) ;
+    let z = sprs::CsMatI::<Complex64,  u64>::zero((10,10)) ;
 }
 
 fn main2() {
@@ -61,4 +57,12 @@ fn main6() {
     let b = Complex64::new(4.0, 0.0);
     let b  = sprs::binop::csmat_binop(p_mat.view(),  q_mat.view(), |x,y| a * x + b * y) ;
     println!("{}",b.to_dense()) ;
+}
+
+fn main7() {
+    let spop = SparsePauliOp::new(
+        PauliList::from_labels(&vec![&"I".to_string(),&"X".to_string()]).unwrap(),
+        vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]).unwrap() ;
+    let sp_mat = spop.to_matrix() ;
+    println!("{}",sp_mat.to_dense()) ;
 }
