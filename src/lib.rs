@@ -187,7 +187,12 @@ impl Pauli {
 pub struct PauliList {
     v : Vec<Pauli>
 }
+use std::slice::* ;
 impl PauliList {
+    pub fn num_qubits(&self) -> usize { self.v[0].num_qubits() }
+    pub fn iter(&self) -> Iter<'_, Pauli> {
+        self.v.iter()
+    }
     pub fn from_paulis(v : Vec<Pauli>) -> Result<PauliList,  &'static str> {
         if v.len() == 0 {
             Err("PauliList::from_paulis: must supply nonempty vector")
@@ -306,6 +311,22 @@ impl SparsePauliOp {
         p.1.scale(p.0) ;
         p.1
     }
+
+    pub fn to_matrix_reduce(&self) -> sprs::CsMatI<Complex64, u64> {
+
+        let  dim = 1 << self.paulis.num_qubits() ;
+
+        self.paulis.iter()
+            .map(|p| p.to_matrix())
+            .zip(self.coeffs.iter().map(|c| c.clone()))
+            .reduce(|(a,acoeff),(b,bcoeff)| {
+                (sprs::binop::csmat_binop(a.view(), b.view(), |x,y| acoeff * x + bcoeff * y),
+                 Complex64::new(1.0, 0.0))
+            })
+            .unwrap().0
+    }
+
+
 }
 
 #[cfg(test)]
@@ -497,6 +518,9 @@ phase=2
                    array![[one, two],
                           [two, one]]) ;
         assert_eq!(spop.to_matrix_accel().to_dense(),
+                   array![[one, two],
+                          [two, one]]) ;
+        assert_eq!(spop.to_matrix_reduce().to_dense(),
                    array![[one, two],
                           [two, one]]) ;
     }
