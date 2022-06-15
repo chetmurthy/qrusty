@@ -1,4 +1,3 @@
-use std::boxed::Box ;
 use regex::Regex;
 use num_complex::Complex64;
 
@@ -6,7 +5,7 @@ static DIGIT : &str = "[0-9]" ;
 static  NZDIGIT : &str = "[1-9]" ;
 
 fn unamp(l : Vec<&String>) -> Vec<String> {
-    l.iter().map(|s| String::from(s.clone())).collect()
+    l.iter().map(|s| String::from(*s)).collect()
 }
 
 fn conc(l : Vec<&String>) -> String {
@@ -54,7 +53,6 @@ lazy_static! {
         let exp = conc(vec![&"[eE]".to_string(), &opt(&"[-+]".to_string()), &plus(&digit)]) ;
         let unsigned_float = disj(vec![&conc(vec![&int , &opt(&frac) , &opt(&exp)]),
                                        &conc(vec![&ne_frac, &opt(&exp)])]) ;
-        let signed_float = conc(vec![ &opt(&"[-+]".to_string()), &unsigned_float ]) ;
         unsigned_float
     } ;
     static ref SignedFloat : String = {

@@ -20,7 +20,9 @@ criterion = "0.3"
 [[bench]]
 name = "bench1"
 harness = false
+html_reports = true
 
 [[bench]]
 name = "big_bench"
 harness = false
+html_reports = true

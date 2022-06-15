@@ -79,6 +79,9 @@ pub struct Pauli {
 impl Pauli {
 
     pub fn num_qubits(&self) -> usize { self.paulis.len() }
+    fn parse_label_str(s : &str) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
+        Pauli::parse_label(&String::from(s))
+    }
     fn parse_label(s : &String) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
         lazy_static! {
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
@@ -106,7 +109,11 @@ impl Pauli {
     }
 
     pub fn new(s : &String) -> Result<Pauli, &'static str> {
-        let (base_phase, paulis) = Pauli::parse_label(s)? ;
+        let (base_phase, paulis) = Pauli::parse_label_str(s)? ;
+        Ok(Pauli{ base_phase, paulis })
+    }
+    pub fn new_str(s : &str) -> Result<Pauli, &'static str> {
+        let (base_phase, paulis) = Pauli::parse_label_str(s)? ;
         Ok(Pauli{ base_phase, paulis })
     }
 
@@ -207,7 +214,23 @@ impl PauliList {
         }
     }
 
-    pub fn from_labels(l : &Vec<&String>) -> Result<PauliList, &'static str> {
+    pub fn from_labels(l : &Vec<String>) -> Result<PauliList, &'static str> {
+        let mut v = Vec::new() ;
+        for s in l.iter() {
+            let p = Pauli::new(s)? ;
+            v.push(p) ;
+        }
+        PauliList::from_paulis(v)
+    }
+    pub fn from_labels_str(l : &Vec<&str>) -> Result<PauliList, &'static str> {
+        let mut v = Vec::new() ;
+        for s in l.iter() {
+            let p = Pauli::new_str(s)? ;
+            v.push(p) ;
+        }
+        PauliList::from_paulis(v)
+    }
+    pub fn from_borrowed_labels(l : &Vec<&String>) -> Result<PauliList, &'static str> {
         let mut v = Vec::new() ;
         for s in l.iter() {
             let p = Pauli::new(s)? ;
@@ -314,8 +337,6 @@ impl SparsePauliOp {
 
     pub fn to_matrix_reduce(&self) -> sprs::CsMatI<Complex64, u64> {
 
-        let  dim = 1 << self.paulis.num_qubits() ;
-
         self.paulis.iter()
             .zip(self.coeffs.iter().map(|c| c.clone()))
             .map(|(p,c)| (p.to_matrix(),c))
@@ -327,8 +348,6 @@ impl SparsePauliOp {
     }
 
     pub fn to_matrix_rayon(&self) -> sprs::CsMatI<Complex64, u64> {
-
-        let  dim = 1 << self.paulis.num_qubits() ;
 
         let pairs : Vec< (&Pauli, Complex64) > =
             self.paulis.iter()
@@ -520,8 +539,8 @@ phase=2
 
     #[test]
     fn pauli_list() {
-        assert!(PauliList::from_labels(&vec![&"I".to_string()]).is_ok()) ;
-        assert!(PauliList::from_labels(&vec![&"I".to_string(), &"II".to_string()]).is_err()) ;
+        assert!(PauliList::from_labels(&vec!["I".to_string()]).is_ok()) ;
+        assert!(PauliList::from_labels(&vec!["I".to_string(), "II".to_string()]).is_err()) ;
     }
 
     #[test]
@@ -534,7 +553,7 @@ phase=2
         let minus_i = Complex64::new(0.0, -1.0) ;
 
         let spop = SparsePauliOp::new(
-            PauliList::from_labels(&vec![&"I".to_string(),&"X".to_string()]).unwrap(),
+            PauliList::from_labels_str(&vec!["I","X"]).unwrap(),
             vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]) ;
         assert!(spop.is_ok()) ;
         let spop = spop.unwrap() ;
