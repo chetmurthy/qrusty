@@ -79,10 +79,7 @@ pub struct Pauli {
 impl Pauli {
 
     pub fn num_qubits(&self) -> usize { self.paulis.len() }
-    fn parse_label_str(s : &str) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
-        Pauli::parse_label(&String::from(s))
-    }
-    fn parse_label(s : &String) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
+    fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
         lazy_static! {
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
         }
@@ -108,12 +105,8 @@ impl Pauli {
         else { Ok((phase, paulis)) }
     }
 
-    pub fn new(s : &String) -> Result<Pauli, &'static str> {
-        let (base_phase, paulis) = Pauli::parse_label_str(s)? ;
-        Ok(Pauli{ base_phase, paulis })
-    }
-    pub fn new_str(s : &str) -> Result<Pauli, &'static str> {
-        let (base_phase, paulis) = Pauli::parse_label_str(s)? ;
+    pub fn new(s : &str) -> Result<Pauli, &'static str> {
+        let (base_phase, paulis) = Pauli::parse_label(s)? ;
         Ok(Pauli{ base_phase, paulis })
     }
 
@@ -225,7 +218,7 @@ impl PauliList {
     pub fn from_labels_str(l : &Vec<&str>) -> Result<PauliList, &'static str> {
         let mut v = Vec::new() ;
         for s in l.iter() {
-            let p = Pauli::new_str(s)? ;
+            let p = Pauli::new(s)? ;
             v.push(p) ;
         }
         PauliList::from_paulis(v)

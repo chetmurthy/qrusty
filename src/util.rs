@@ -4,33 +4,33 @@ use num_complex::Complex64;
 static DIGIT : &str = "[0-9]" ;
 static  NZDIGIT : &str = "[1-9]" ;
 
-fn unamp(l : Vec<&String>) -> Vec<String> {
+fn unamp(l : Vec<&str>) -> Vec<String> {
     l.iter().map(|s| String::from(*s)).collect()
 }
 
-fn conc(l : Vec<&String>) -> String {
+fn conc(l : Vec<&str>) -> String {
     let rv = unamp(l).join("") ;
     format!("(?:{})", rv)
 }
 
-fn disj(l : Vec<&String>) -> String {
+fn disj(l : Vec<&str>) -> String {
     let rv = unamp(l).join("|") ;
     format!("(?:{})", rv)
 }
 
-fn top(s : &String) -> String {
+fn top(s : &str) -> String {
     format!("^{}$", s)
 }
-fn capt(s : &String) -> String {
+fn capt(s : &str) -> String {
     format!("({})", s)
 }
-fn star(s : &String) -> String {
+fn star(s : &str) -> String {
     format!("(?:{})*", s)
 }
-fn plus(s : &String) -> String {
+fn plus(s : &str) -> String {
     format!("(?:{})+", s)
 }
-fn opt(s : &String) -> String {
+fn opt(s : &str) -> String {
     format!("(?:{})?", s)
 }
 
@@ -45,32 +45,32 @@ lazy_static! {
      */
 
     static ref UnsignedFloat : String = {
-        let digit = DIGIT.to_string() ;
-        let nzdigit = NZDIGIT.to_string() ;
-        let int = disj(vec![&"0".to_string(), &conc(vec![&nzdigit, &star(&digit)])]) ;
-        let frac = conc(vec![&"\\.".to_string(), &star(&digit)]) ;
-        let ne_frac = conc(vec![&"\\.".to_string(), &plus(&digit)]) ;
-        let exp = conc(vec![&"[eE]".to_string(), &opt(&"[-+]".to_string()), &plus(&digit)]) ;
+        let digit = DIGIT ;
+        let nzdigit = NZDIGIT ;
+        let int = disj(vec!["0", &conc(vec![&nzdigit, &star(&digit)])]) ;
+        let frac = conc(vec!["\\.", &star(&digit)]) ;
+        let ne_frac = conc(vec!["\\.", &plus(&digit)]) ;
+        let exp = conc(vec!["[eE]", &opt("[-+]"), &plus(&digit)]) ;
         let unsigned_float = disj(vec![&conc(vec![&int , &opt(&frac) , &opt(&exp)]),
                                        &conc(vec![&ne_frac, &opt(&exp)])]) ;
         unsigned_float
     } ;
     static ref SignedFloat : String = {
         let digit = DIGIT.to_string() ;
-        let signed_float = conc(vec![ &opt(&"[-+]".to_string()), &UnsignedFloat ]) ;
+        let signed_float = conc(vec![ &opt("[-+]"), &UnsignedFloat ]) ;
         signed_float
     } ;
 
 
     static ref Complex : String = {
-        let spaces = star(&" ".to_string()) ;
+        let spaces = star(" ") ;
         /* {SFLOAT} (({SFLOAT}J)? | J)? */
         let complex = conc(vec![&spaces,
                                 &capt(&opt(&SignedFloat)),
                                 &spaces,
                                 &opt(&disj(vec![
-                                    &conc(vec![&capt(&SignedFloat), &"j".to_string()]),
-                                    &"j".to_string()
+                                    &conc(vec![&capt(&SignedFloat), "j"]),
+                                    "j"
                                 ]))]) ;
         complex
     } ;
