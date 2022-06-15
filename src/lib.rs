@@ -8,6 +8,7 @@ use sprs::{CompressedStorage, CsMatBase, CsMat, TriMat, TriMatI, CsMatI, kroneck
 
 mod accel ;
 pub mod util ;
+pub mod fixtures ;
 
 #[derive(Debug, PartialEq)]
 pub enum SimplePauli {
@@ -266,9 +267,9 @@ impl SparsePauliOp {
     pub fn coeffs(&self) -> &Vec<Complex64> {
         &self.coeffs
     }
-    pub fn new(paulis : PauliList, coeffs : Vec<Complex64>) -> Result<SparsePauliOp,&'static str> {
+    pub fn new(paulis : PauliList, coeffs : &Vec<Complex64>) -> Result<SparsePauliOp,&'static str> {
         if paulis.len() == coeffs.len() {
-            Ok(SparsePauliOp { paulis, coeffs })
+            Ok(SparsePauliOp { paulis, coeffs : coeffs.clone() })
         }
         else { Err("SparsePauliOp::new: paulis and coeffs must have same length") }
     }
@@ -547,7 +548,7 @@ phase=2
 
         let spop = SparsePauliOp::new(
             PauliList::from_labels_str(&vec!["I","X"]).unwrap(),
-            vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]) ;
+            &vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]) ;
         assert!(spop.is_ok()) ;
         let spop = spop.unwrap() ;
         assert_eq!(spop.to_matrix().to_dense(),

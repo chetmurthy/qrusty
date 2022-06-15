@@ -125,7 +125,7 @@ pub fn sparse_pauli_op(n : usize) -> SparsePauliOp {
 
     let spop = SparsePauliOp::new(
         PauliList::from_labels(ll).unwrap(),
-        cl) ;
+        &cl) ;
     spop.unwrap()
 }
 
@@ -183,7 +183,7 @@ fn main6() {
 fn main7() {
     let spop = SparsePauliOp::new(
         PauliList::from_labels_str(&vec!["I","X"]).unwrap(),
-        vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]).unwrap() ;
+        &vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]).unwrap() ;
     let sp_mat = spop.to_matrix() ;
     println!("{}",sp_mat.to_dense()) ;
 }

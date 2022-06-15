@@ -55,11 +55,12 @@ lazy_static! {
                                        &conc(vec![&ne_frac, &opt(&exp)])]) ;
         unsigned_float
     } ;
+
     static ref SignedFloat : String = {
-        let digit = DIGIT.to_string() ;
         let signed_float = conc(vec![ &opt("[-+]"), &UnsignedFloat ]) ;
         signed_float
     } ;
+
 
 
     static ref Complex : String = {
@@ -102,6 +103,14 @@ pub fn complex64_from_string(s : &str) -> Result<Complex64,&str> {
     let imag : f64 = simag.parse().unwrap() ;
 
     Ok(Complex64::new(real, imag))
+}
+
+pub fn complex64_list_from_string_list(l : &Vec<&'static str>) -> Vec<Complex64> {
+    let l: Result<Vec<Complex64>, _> = l
+        .iter()
+        .map(|s| complex64_from_string(s))
+        .collect::<Result<Vec<Complex64>, _>>() ;
+    l.unwrap()
 }
 
 pub struct BinaryTreeFold<T> {
