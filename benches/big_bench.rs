@@ -131,7 +131,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     group.sample_size(10);
     group.bench_function("SparsePauliOp", |b| b.iter(|| {
         let spop = sparse_pauli_op(100) ;
-        spop.to_matrix_rayon() ;
+        spop.to_matrix_accel() ;
     }));
     group.finish() ;
 }

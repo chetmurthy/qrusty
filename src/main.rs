@@ -131,7 +131,7 @@ pub fn sparse_pauli_op(n : usize) -> SparsePauliOp {
 
 fn main() {
         let spop = sparse_pauli_op(100) ;
-        spop.to_matrix_rayon() ;
+        spop.to_matrix_accel() ;
 }
 
 fn main2() {
