@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate lazy_static;
 
+use std::cmp::min;
+
 #[macro_use] extern crate impl_ops;
 use std::ops;
 
@@ -15,12 +17,13 @@ mod accel ;
 pub mod util ;
 pub mod fixtures ;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, Clone)]
 pub enum SimplePauli {
     I, X, Y, Z,
 }
 
 use crate::SimplePauli::* ;
+#[derive(Debug, Eq, Clone)]
 impl SimplePauli {
     pub fn new(c : char)-> Result<SimplePauli, &'static str> {
         match c {
@@ -231,6 +234,15 @@ impl SparsePauliOp {
             }
         }
     }
+    pub fn from_slice(summands : &[PauliSummand]) -> SparsePauliOp {
+        let members : Vec<PauliSummand> =
+            summands
+            .iter()
+            .map(|s| s.clone())
+            .collect() ;
+        SparsePauliOp { members }
+    }
+
     pub fn from_labels(l : &[&str], coeffs : &[Complex64]) -> Result<SparsePauliOp, &'static str> {
         let mut v = Vec::new() ;
         for s in l.iter() {
@@ -337,6 +349,38 @@ impl SparsePauliOp {
                         }
                     })
             .unwrap()
+    }
+
+    pub fn to_matrix_rayon_chunked(&self, step : usize) -> sprs::CsMatI<Complex64, u64> {
+
+        let chunks : Vec<SparsePauliOp> =
+            (0..self.members.len())
+            .into_iter()
+            .step_by(step)
+            .map(|n| SparsePauliOp::from_slice(&self.members[n .. min(n + step, self.members.len())]))
+            .collect();
+
+        if chunks.len() == 1 {
+            self.to_matrix_accel()
+        }
+        else {
+            chunks
+                .par_iter()
+                .map(|p| {
+                    let mut m = p.to_matrix_accel() ;
+                    Some(m)
+                })
+                .reduce(|| None,
+                        |l,r| {
+                            match (l,r) {
+                                (None, None) => None,
+                                (None,  Some(r)) => Some(r),
+                                (Some(l), None) => Some(l),
+                                (Some(l), Some(r)) => Some(&l + &r)
+                            }
+                        })
+                .unwrap()
+        }
     }
 
 }

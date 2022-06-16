@@ -10,6 +10,7 @@ pub enum TestOperation {
     ToMatrixAccel,
     ToMatrixReduce,
     ToMatrixRayon,
+    ToMatrixRayonChunked(usize),
 }
 
 use TestOperation::* ;
@@ -21,6 +22,7 @@ impl TestOperation {
             ToMatrixAccel => spop.to_matrix_accel(),
             ToMatrixReduce => spop.to_matrix_reduce(),
             ToMatrixRayon => spop.to_matrix_rayon(),
+            ToMatrixRayonChunked(step) => spop.to_matrix_rayon_chunked(*step),
         } ;
     }
 }
@@ -104,6 +106,9 @@ lazy_static! {
         let ops = vec![
             ToMatrixAccel,
             ToMatrixRayon,
+            ToMatrixRayonChunked(250),
+            ToMatrixRayonChunked(500),
+            ToMatrixRayonChunked(1000),
         ] ;
 	TestCase { name : "H8", labels, coeffs, ops }
     } ;
