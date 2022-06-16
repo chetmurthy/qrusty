@@ -274,6 +274,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "impl_ops"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90f97a5f38dd3ccfbe7aa80f4a0c00930f21b922c74195be0201c51028f22dcf"
+
+[[package]]
 name = "indexmap"
 version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -505,6 +511,7 @@ version = "0.1.0"
 dependencies = [
  "clap 3.1.18",
  "criterion",
+ "impl_ops",
  "lazy_static",
  "ndarray",
  "num-complex 0.4.1",

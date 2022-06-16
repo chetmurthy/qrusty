@@ -8,6 +8,7 @@ use std::ops::Add;
 use std::ops::Index;
 use num_complex::Complex64;
 use regex::Regex;
+use rayon::prelude::*;
 use sprs::{CompressedStorage, CsMatBase, CsMat, TriMat, TriMatI, CsMatI, kronecker_product};
 
 mod accel ;
@@ -187,81 +188,39 @@ impl Pauli {
         }
     }
 }
+type PauliSummand = (Pauli, Complex64) ;
+type PauliSum = Vec<PauliSummand> ;
 
-pub struct PauliList {
-    v : Vec<Pauli>
+impl<'a> Index<isize> for SparsePauliOp {
+    type Output = PauliSummand ;
+    fn index(self : &SparsePauliOp, index: isize) -> &PauliSummand {
+        let self_len = self.members.len() as isize;
+        let idx = (((index % self_len) + self_len) % self_len) as usize;
+        &self.members[idx]
+    }
 }
-use std::slice::* ;
-impl PauliList {
-    pub fn num_qubits(&self) -> usize { self.v[0].num_qubits() }
-    pub fn iter(&self) -> Iter<'_, Pauli> {
-        self.v.iter()
-    }
-    pub fn from_paulis(v : Vec<Pauli>) -> Result<PauliList,  &'static str> {
-        if v.len() == 0 {
-            Err("PauliList::from_paulis: must supply nonempty vector")
-        }
-        else {
-            let n = v[0].num_qubits() ;
-            if ! v.iter().all(|p| p.num_qubits() == n) {
-                Err("PauliList::from_paulis: all paulis must have same #qubits")
-            }
-            else {
-                Ok(PauliList { v })
-            }
-        }
-    }
 
-    pub fn from_labels(l : &Vec<String>) -> Result<PauliList, &'static str> {
-        let mut v = Vec::new() ;
-        for s in l.iter() {
-            let p = Pauli::new(s)? ;
-            v.push(p) ;
-        }
-        PauliList::from_paulis(v)
-    }
-    pub fn from_labels_str(l : &Vec<&str>) -> Result<PauliList, &'static str> {
-        let mut v = Vec::new() ;
-        for s in l.iter() {
-            let p = Pauli::new(s)? ;
-            v.push(p) ;
-        }
-        PauliList::from_paulis(v)
-    }
-    pub fn len(&self) -> usize {
-        self.v.len()
-    }
-}
-impl Index<isize> for PauliList {
-    type Output = Pauli;
-    fn index(&self, index: isize) -> &Pauli {
-        let self_len = self.v.len() as isize;
-        let idx = (((index % self_len) + self_len) % self_len) as usize;
-        &self.v[idx]
-    }
-}
-/*
-impl Index<usize> for PauliList {
-    type Output = Pauli;
-    fn index(&self, index: usize) -> &Pauli {
-        let self_len = self.v.len() as usize;
-        let idx = (((index % self_len) + self_len) % self_len) as usize;
-        &self.v[idx]
-    }
-}
-*/
-type PauliSum = Vec<(Pauli, Complex64)> ;
 pub struct SparsePauliOp {
     members : PauliSum
 }
-use rayon::prelude::*;
 impl SparsePauliOp {
     pub fn members(&self) -> &PauliSum {
         &self.members
     }
     pub fn num_qubits(&self) -> usize { self.members[0].0.num_qubits() }
     pub fn new(paulis : Vec<Pauli>, coeffs : &[Complex64]) -> Result<SparsePauliOp,&'static str> {
-        if paulis.len() == coeffs.len() {
+        if paulis.len() != coeffs.len() {
+            Err("SparsePauliOp::new: paulis and coeffs must have same length")
+        }
+        else if paulis.len() == 0 {
+            Err("SparsePauliOp::new: at least one pauli must be supplied")
+        }
+        else {
+            let num_qubits = paulis[0].num_qubits() ;
+            if paulis.iter().any(|p| p.num_qubits() != num_qubits) {
+            Err("SparsePauliOp::new: all supplied paulis must have the same #qubits")
+            }
+            else {
             let mut members : PauliSum = Vec::new() ;
             paulis.iter()
                 .zip(coeffs.iter())
@@ -269,8 +228,8 @@ impl SparsePauliOp {
                     members.push((p.clone(),*c)) ;
                 }) ;
             Ok(SparsePauliOp { members })
+            }
         }
-        else { Err("SparsePauliOp::new: paulis and coeffs must have same length") }
     }
     pub fn from_labels(l : &[&str], coeffs : &[Complex64]) -> Result<SparsePauliOp, &'static str> {
         let mut v = Vec::new() ;
@@ -279,6 +238,12 @@ impl SparsePauliOp {
             v.push(p) ;
         }
         SparsePauliOp::new(v, coeffs)
+    }
+    pub fn from_labels_simple(l : &[&str]) -> Result<SparsePauliOp, &'static str> {
+        let coeffs : Vec<Complex64> = l.iter()
+            .map(|_| Complex64::new(1.0, 0.0))
+            .collect() ;
+        SparsePauliOp::from_labels(l, &coeffs[..])
     }
 
     pub fn to_matrix(&self) -> sprs::CsMatI<Complex64, u64> {
@@ -551,8 +516,6 @@ phase=2
 
     #[test]
     fn pauli_list() {
-        assert!(PauliList::from_labels(&vec!["I".to_string()]).is_ok()) ;
-        assert!(PauliList::from_labels(&vec!["I".to_string(), "II".to_string()]).is_err()) ;
     }
 
     #[test]
@@ -563,6 +526,9 @@ phase=2
         let zero = Complex64::new(0.0, 0.0) ;
         let i = Complex64::new(0.0, 1.0) ;
         let minus_i = Complex64::new(0.0, -1.0) ;
+
+        assert!(SparsePauliOp::from_labels_simple(&["I"][..]).is_ok()) ;
+        assert!(SparsePauliOp::from_labels_simple(&["I", "II"][..]).is_err()) ;
 
         let spop = SparsePauliOp::from_labels(
             &["I","X"][..],
