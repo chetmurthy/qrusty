@@ -1,6 +1,10 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use] extern crate impl_ops;
+use std::ops;
+
+use std::ops::Add;
 use std::ops::Index;
 use num_complex::Complex64;
 use regex::Regex;
@@ -375,14 +379,14 @@ impl SparsePauliOp {
     }
 
 }
-/*
-impl Add for SparsePauliOp {
-    type Output = Self ;
-    fn add(&self, other : &Self) -> Self {
-        
-    }
-}
-*/
+
+impl_op_ex!(+ |a: &SparsePauliOp, b: &SparsePauliOp| -> SparsePauliOp {
+    let mut l = Vec::new();
+    a.members.iter().for_each(|m| l.push(m.clone())) ;
+    b.members.iter().for_each(|m| l.push(m.clone())) ;
+    SparsePauliOp { members : l }
+});
+
 #[cfg(test)]
 mod tests {
     use num_complex::Complex64;
