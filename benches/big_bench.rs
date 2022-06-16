@@ -4,7 +4,6 @@ use num_complex::Complex64;
 use qrusty::fixtures ;
 use qrusty::util ;
 use qrusty::Pauli ;
-use qrusty::PauliList ;
 use qrusty::SparsePauliOp ;
 
 pub fn sparse_pauli_op(n : usize) -> SparsePauliOp {
