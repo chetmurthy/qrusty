@@ -320,12 +320,8 @@ impl SparsePauliOp {
 
     pub fn to_matrix_rayon(&self) -> sprs::CsMatI<Complex64, u64> {
 
-        let pairs : Vec< (&Pauli, Complex64) > =
-            self.members.iter()
-            .map(|(p,c)| (p,*c))
-            .collect();
-
-        pairs.par_iter()
+        self.members
+            .par_iter()
             .map(|(p,c)| {
                 let mut m = p.to_matrix() ;
                 m.scale(*c) ;
