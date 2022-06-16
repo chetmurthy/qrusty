@@ -116,16 +116,14 @@ pub fn sparse_pauli_op(n : usize) -> SparsePauliOp {
     ] ;
     assert_eq!(labels.len(), coeffs.len()) ;
     
-    let ll = &labels[..n].iter().map(|s| String::from(*s)).collect() ;
+    let ll = &labels[..n] ;
     let cl: Result<Vec<Complex64>, _> = coeffs[..n]
         .iter()
         .map(|s| util::complex64_from_string(s))
         .collect::<Result<Vec<Complex64>, _>>();
     let cl = cl.unwrap() ;
 
-    let spop = SparsePauliOp::new(
-        PauliList::from_labels(ll).unwrap(),
-        &cl) ;
+    let spop = SparsePauliOp::from_labels(&ll, &cl) ;
     spop.unwrap()
 }
 
@@ -181,9 +179,9 @@ fn main6() {
 }
 
 fn main7() {
-    let spop = SparsePauliOp::new(
-        PauliList::from_labels_str(&vec!["I","X"]).unwrap(),
-        &vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]).unwrap() ;
+    let spop = SparsePauliOp::from_labels(
+        &["I","X"][..],
+        &[Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)][..]).unwrap() ;
     let sp_mat = spop.to_matrix() ;
     println!("{}",sp_mat.to_dense()) ;
 }

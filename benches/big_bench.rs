@@ -114,15 +114,14 @@ pub fn sparse_pauli_op(n : usize) -> SparsePauliOp {
     ] ;
     assert_eq!(labels.len(), coeffs.len()) ;
     
-    let ll = &labels[..n].iter().map(|s| String::from(*s)).collect() ;
     let cl: Result<Vec<Complex64>, _> = coeffs[..n]
         .iter()
         .map(|s| util::complex64_from_string(s))
         .collect::<Result<Vec<Complex64>, _>>();
     let cl = cl.unwrap() ;
 
-    let spop = SparsePauliOp::new(
-        PauliList::from_labels(ll).unwrap(),
+    let spop = SparsePauliOp::from_labels(
+        &labels[..],
         &cl) ;
     spop.unwrap()
 }
@@ -132,11 +131,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     group.sample_size(10);
     fixtures::AllTests.iter()
         .for_each(|tc| {
-	    let ll = &tc.labels ;
-	    let cl = &tc.coeffs ;
-	    let spop = SparsePauliOp::new(
-                PauliList::from_labels_str(ll).unwrap(),
-                cl).unwrap() ;
+	    let ll = &tc.labels[..] ;
+	    let cl = &tc.coeffs[..] ;
+	    let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
             tc.ops.iter()
                 .for_each(|op| {
                     group.bench_function(format!("{}+{:?}", tc.name, op), |b| b.iter(|| {

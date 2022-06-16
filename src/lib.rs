@@ -10,7 +10,7 @@ mod accel ;
 pub mod util ;
 pub mod fixtures ;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SimplePauli {
     I, X, Y, Z,
 }
@@ -72,7 +72,7 @@ array([ True,  True, False, False])
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pauli {
     base_phase : usize,
     paulis : Vec<SimplePauli>,
@@ -224,14 +224,6 @@ impl PauliList {
         }
         PauliList::from_paulis(v)
     }
-    pub fn from_borrowed_labels(l : &Vec<&String>) -> Result<PauliList, &'static str> {
-        let mut v = Vec::new() ;
-        for s in l.iter() {
-            let p = Pauli::new(s)? ;
-            v.push(p) ;
-        }
-        PauliList::from_paulis(v)
-    }
     pub fn len(&self) -> usize {
         self.v.len()
     }
@@ -254,33 +246,46 @@ impl Index<usize> for PauliList {
     }
 }
 */
+type PauliSum = Vec<(Pauli, Complex64)> ;
 pub struct SparsePauliOp {
-    paulis : PauliList ,
-    coeffs : Vec<Complex64> ,
+    members : PauliSum
 }
 use rayon::prelude::*;
 impl SparsePauliOp {
-    pub fn paulis(&self) -> &PauliList {
-        &self.paulis
+    pub fn members(&self) -> &PauliSum {
+        &self.members
     }
-    pub fn num_qubits(&self) -> usize { self.paulis[0].num_qubits() }
-    pub fn coeffs(&self) -> &Vec<Complex64> {
-        &self.coeffs
-    }
-    pub fn new(paulis : PauliList, coeffs : &Vec<Complex64>) -> Result<SparsePauliOp,&'static str> {
+    pub fn num_qubits(&self) -> usize { self.members[0].0.num_qubits() }
+    pub fn new(paulis : Vec<Pauli>, coeffs : &[Complex64]) -> Result<SparsePauliOp,&'static str> {
         if paulis.len() == coeffs.len() {
-            Ok(SparsePauliOp { paulis, coeffs : coeffs.clone() })
+            let mut members : PauliSum = Vec::new() ;
+            paulis.iter()
+                .zip(coeffs.iter())
+                .for_each(|(p,c)| {
+                    members.push((p.clone(),*c)) ;
+                }) ;
+            Ok(SparsePauliOp { members })
         }
         else { Err("SparsePauliOp::new: paulis and coeffs must have same length") }
     }
+    pub fn from_labels(l : &[&str], coeffs : &[Complex64]) -> Result<SparsePauliOp, &'static str> {
+        let mut v = Vec::new() ;
+        for s in l.iter() {
+            let p = Pauli::new(s)? ;
+            v.push(p) ;
+        }
+        SparsePauliOp::new(v, coeffs)
+    }
 
     pub fn to_matrix(&self) -> sprs::CsMatI<Complex64, u64> {
-        let mut sum = self.paulis[0].to_matrix().clone() ;
-        sum.scale(self.coeffs[0]) ;
-        for i in 1..self.paulis.len() {
-            let p = self.paulis[i as isize].to_matrix() ;
-            let coeff = self.coeffs[i] ;
-            sum = sprs::binop::csmat_binop(sum.view(), p.view(), |x,y| x + coeff * y) ;
+        let zeroth = &self.members[0] ;
+        let mut sum = zeroth.0.to_matrix().clone() ;
+        sum.scale(zeroth.1) ;
+        for i in 1..self.members.len() {
+            let ith = &self.members[i] ;
+            let m = ith.0.to_matrix() ;
+            let coeff = ith.1 ;
+            sum = sprs::binop::csmat_binop(sum.view(), m.view(), |x,y| x + coeff * y) ;
         }
         sum
     }
@@ -293,13 +298,15 @@ impl SparsePauliOp {
              sprs::binop::csmat_binop(l.1.view(), r.1.view(), |x,y| l.0 * x + r.0 * y))
         }
 
-        let p0 = self.paulis[0].to_matrix().clone() ;
-        let coeff0 = self.coeffs[0] ;
+        let zeroth = &self.members[0] ;
+        let p0 = zeroth.0.to_matrix().clone() ;
+        let coeff0 = zeroth.1 ;
         let mut bt = util::BinaryTreeFold::begin((coeff0, p0), |x,y| addmul(x,y)) ;
 
-        for i in 1..self.paulis.len() {
-            let p = self.paulis[i as isize].to_matrix() ;
-            let coeff = self.coeffs[i] ;
+        for i in 1..self.members.len() {
+            let ith = &self.members[i] ;
+            let p = ith.0.to_matrix() ;
+            let coeff = ith.1 ;
             bt.add((coeff, p)) ;
         }
         let mut p = bt.end() ;
@@ -315,13 +322,15 @@ impl SparsePauliOp {
              sprs::binop::csmat_binop(l.1.view(), r.1.view(), |x,y| l.0 * x + r.0 * y))
         }
 
-        let p0 = self.paulis[0].to_matrix_accel().clone() ;
-        let coeff0 = self.coeffs[0] ;
+        let zeroth = &self.members[0] ;
+        let p0 = zeroth.0.to_matrix_accel().clone() ;
+        let coeff0 = zeroth.1 ;
         let mut bt = util::BinaryTreeFold::begin((coeff0, p0), |x,y| addmul(x,y)) ;
 
-        for i in 1..self.paulis.len() {
-            let p = self.paulis[i as isize].to_matrix_accel() ;
-            let coeff = self.coeffs[i] ;
+        for i in 1..self.members.len() {
+            let ith = &self.members[i] ;
+            let p = ith.0.to_matrix_accel() ;
+            let coeff = ith.1 ;
             bt.add((coeff, p)) ;
         }
         let mut p = bt.end() ;
@@ -331,9 +340,8 @@ impl SparsePauliOp {
 
     pub fn to_matrix_reduce(&self) -> sprs::CsMatI<Complex64, u64> {
 
-        self.paulis.iter()
-            .zip(self.coeffs.iter().map(|c| c.clone()))
-            .map(|(p,c)| (p.to_matrix(),c))
+        self.members.iter()
+            .map(|(p,c)| (p.to_matrix(),*c))
             .reduce(|(a,acoeff),(b,bcoeff)| {
                 (sprs::binop::csmat_binop(a.view(), b.view(), |x,y| acoeff * x + bcoeff * y),
                  Complex64::new(1.0, 0.0))
@@ -344,8 +352,7 @@ impl SparsePauliOp {
     pub fn to_matrix_rayon(&self) -> sprs::CsMatI<Complex64, u64> {
 
         let pairs : Vec< (&Pauli, Complex64) > =
-            self.paulis.iter()
-            .zip(self.coeffs.iter())
+            self.members.iter()
             .map(|(p,c)| (p,*c))
             .collect();
 
@@ -368,7 +375,14 @@ impl SparsePauliOp {
     }
 
 }
-
+/*
+impl Add for SparsePauliOp {
+    type Output = Self ;
+    fn add(&self, other : &Self) -> Self {
+        
+    }
+}
+*/
 #[cfg(test)]
 mod tests {
     use num_complex::Complex64;
@@ -546,9 +560,9 @@ phase=2
         let i = Complex64::new(0.0, 1.0) ;
         let minus_i = Complex64::new(0.0, -1.0) ;
 
-        let spop = SparsePauliOp::new(
-            PauliList::from_labels_str(&vec!["I","X"]).unwrap(),
-            &vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)]) ;
+        let spop = SparsePauliOp::from_labels(
+            &["I","X"][..],
+            &[Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)][..]) ;
         assert!(spop.is_ok()) ;
         let spop = spop.unwrap() ;
         assert_eq!(spop.to_matrix().to_dense(),
