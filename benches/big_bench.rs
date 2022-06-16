@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkGroup};
 use num_complex::Complex64;
 
 use qrusty::fixtures ;
@@ -130,38 +130,21 @@ pub fn sparse_pauli_op(n : usize) -> SparsePauliOp {
 pub fn criterion_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("SparsePauliOp");
     group.sample_size(10);
-    group.bench_function("H2", |b| b.iter(|| {
-	let ll = &fixtures::H2.0 ;
-	let cl = &fixtures::H2.1 ;
-	let spop = SparsePauliOp::new(
-            PauliList::from_labels_str(ll).unwrap(),
-            cl).unwrap() ;
-        spop.to_matrix_accel() ;
-    }));
-    group.bench_function("H4", |b| b.iter(|| {
-	let ll = &fixtures::H4.0 ;
-	let cl = &fixtures::H4.1 ;
-	let spop = SparsePauliOp::new(
-            PauliList::from_labels_str(ll).unwrap(),
-            cl).unwrap() ;
-        spop.to_matrix_accel() ;
-    }));
-    group.bench_function("H6", |b| b.iter(|| {
-	let ll = &fixtures::H6.0 ;
-	let cl = &fixtures::H6.1 ;
-	let spop = SparsePauliOp::new(
-            PauliList::from_labels_str(ll).unwrap(),
-            cl).unwrap() ;
-        spop.to_matrix_accel() ;
-    }));
-    group.bench_function("H8", |b| b.iter(|| {
-	let ll = &fixtures::H8.0 ;
-	let cl = &fixtures::H8.1 ;
-	let spop = SparsePauliOp::new(
-            PauliList::from_labels_str(ll).unwrap(),
-            cl).unwrap() ;
-        spop.to_matrix_accel() ;
-    }));
+    fixtures::AllTests.iter()
+        .for_each(|tc| {
+	    let ll = &tc.labels ;
+	    let cl = &tc.coeffs ;
+	    let spop = SparsePauliOp::new(
+                PauliList::from_labels_str(ll).unwrap(),
+                cl).unwrap() ;
+            tc.ops.iter()
+                .for_each(|op| {
+                    group.bench_function(format!("{}+{:?}", tc.name, op), |b| b.iter(|| {
+                        op.run(&spop) ;
+                    }));
+                }) ;
+        }) ;
+
     group.finish() ;
 }
 

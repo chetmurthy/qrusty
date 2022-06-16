@@ -27,5 +27,5 @@ name = "big_bench"
 harness = false
 html_reports = true
 
-#[profile.dev]
-#opt-level = 3
+[profile.dev]
+opt-level = 3
