@@ -17,13 +17,12 @@ mod accel ;
 pub mod util ;
 pub mod fixtures ;
 
-#[derive(Debug, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SimplePauli {
     I, X, Y, Z,
 }
 
 use crate::SimplePauli::* ;
-#[derive(Debug, Eq, Clone)]
 impl SimplePauli {
     pub fn new(c : char)-> Result<SimplePauli, &'static str> {
         match c {
