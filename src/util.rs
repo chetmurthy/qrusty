@@ -113,17 +113,17 @@ pub fn complex64_list_from_string_list(l : &Vec<&'static str>) -> Vec<Complex64>
         .collect::<Result<Vec<Complex64>, _>>() ;
     l.unwrap()
 }
-/*
+
 pub fn csmatrix_nz(it : &sprs::CsMatI<Complex64,  u64>, tolerance : f64) -> usize {
     it.view()
         .iter_rbr()
         .filter(|(c,_)| {
             let c : Complex64 = **c ;
-            c.abs() <= tolerance
+            c.norm() <= tolerance
         })
         .count()
 }
-*/
+
 pub struct BinaryTreeFold<T> {
     stk : Vec<(usize, T)>,
     op : fn(l : T, r: T) -> T
@@ -244,7 +244,7 @@ pub mod list {
 mod tests {
     use num_complex::Complex64;
     use crate::util::BinaryTreeFold ;
-//    use crate::util::csmatrix_nz;
+    use crate::util::csmatrix_nz;
     use crate::util::list::* ;
 
     #[test]
@@ -279,7 +279,7 @@ mod tests {
         assert_eq!(crate::util::complex64_from_string("1+2j"), Ok(Complex64::new(1.0,  2.0))) ;
         assert_eq!(crate::util::complex64_from_string("1-2j"), Ok(Complex64::new(1.0,  -2.0))) ;
     }
-/*
+
     #[test]
     fn test_csmatrix_nz() {
         let eye_100 = sprs::CsMatI::<Complex64, u64>::eye(100) ;
@@ -288,5 +288,5 @@ mod tests {
         scaled.scale(Complex64::new(1e-8, 0.0)) ;
         assert_eq!(csmatrix_nz(&scaled, 1e-7), 100) ;
     }
-*/
+
 }
