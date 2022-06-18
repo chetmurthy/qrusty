@@ -377,7 +377,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dec23e6762830658d2b3d385a75aa212af2f67a4586d4442907144f3bb6a1ca8"
 dependencies = [
  "matrixmultiply",
- "num-complex 0.4.1",
+ "num-complex 0.4.2",
  "num-integer",
  "num-traits",
  "rawpointer",
@@ -395,9 +395,9 @@ dependencies = [
 
 [[package]]
 name = "num-complex"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fbc387afefefd5e9e39493299f3069e14a140dd34dc19b4c1c1a8fddb6a790"
+checksum = "7ae39348c8bc5fbd7f40c727a9925f03517afd2ab27d46702108b6a7e5414c19"
 dependencies = [
  "num-traits",
 ]
@@ -514,7 +514,8 @@ dependencies = [
  "impl_ops",
  "lazy_static",
  "ndarray",
- "num-complex 0.4.1",
+ "num-complex 0.4.2",
+ "num-traits",
  "rayon",
  "regex",
  "sprs",
@@ -670,7 +671,7 @@ checksum = "6ea71e48b3eab4c4b153e8e35dcaeac132720809ef68359097b8cb54a18edd70"
 dependencies = [
  "alga",
  "ndarray",
- "num-complex 0.4.1",
+ "num-complex 0.4.2",
  "num-traits",
  "num_cpus",
  "rayon",

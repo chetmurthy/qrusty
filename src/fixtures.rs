@@ -1,4 +1,4 @@
-use regex::Regex;
+#![allow(non_upper_case_globals)]
 use num_complex::Complex64;
 use crate::util ;
 use crate::* ;

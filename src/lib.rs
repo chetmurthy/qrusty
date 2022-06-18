@@ -6,12 +6,11 @@ use std::cmp::min;
 #[macro_use] extern crate impl_ops;
 use std::ops;
 
-use std::ops::Add;
 use std::ops::Index;
 use num_complex::Complex64;
 use regex::Regex;
 use rayon::prelude::*;
-use sprs::{CompressedStorage, CsMatBase, CsMat, TriMat, TriMatI, CsMatI, kronecker_product};
+use sprs::{CompressedStorage, TriMatI, CsMatI, kronecker_product};
 
 mod accel ;
 pub mod util ;
@@ -366,7 +365,7 @@ impl SparsePauliOp {
             chunks
                 .par_iter()
                 .map(|p| {
-                    let mut m = p.to_matrix_accel() ;
+                    let m = p.to_matrix_accel() ;
                     Some(m)
                 })
                 .reduce(|| None,
@@ -395,10 +394,8 @@ impl_op_ex!(+ |a: &SparsePauliOp, b: &SparsePauliOp| -> SparsePauliOp {
 mod tests {
     use num_complex::Complex64;
     use ndarray::array ;
-    use ndarray::prelude::*;
     use sprs::*;
 
-    use crate::SimplePauli::* ;
     use crate::* ;
 
     #[test]
@@ -515,12 +512,6 @@ phase=2
 
     #[test]
     fn pauli_matrices() {
-        let one = Complex64::new(1.0, 0.0) ;
-        let minus_one = Complex64::new(-1.0, 0.0) ;
-        let zero = Complex64::new(0.0, 0.0) ;
-        let i = Complex64::new(0.0, 1.0) ;
-        let minus_i = Complex64::new(0.0, -1.0) ;
-
         let p = Pauli::new(&"IX".to_string()) ;
         assert!(p.is_ok()) ;
         let p = p.unwrap() ;
@@ -561,10 +552,10 @@ phase=2
     fn sparse_pauli_op() {
         let one = Complex64::new(1.0, 0.0) ;
         let two = 2.0 * one ;
-        let minus_one = Complex64::new(-1.0, 0.0) ;
-        let zero = Complex64::new(0.0, 0.0) ;
-        let i = Complex64::new(0.0, 1.0) ;
-        let minus_i = Complex64::new(0.0, -1.0) ;
+        let _minus_one = Complex64::new(-1.0, 0.0) ;
+        let _zero = Complex64::new(0.0, 0.0) ;
+        let _i = Complex64::new(0.0, 1.0) ;
+        let _minus_i = Complex64::new(0.0, -1.0) ;
 
         assert!(SparsePauliOp::from_labels_simple(&["I"][..]).is_ok()) ;
         assert!(SparsePauliOp::from_labels_simple(&["I", "II"][..]).is_err()) ;

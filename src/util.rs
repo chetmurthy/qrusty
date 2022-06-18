@@ -1,6 +1,6 @@
+#![allow(non_upper_case_globals)]
 use regex::Regex;
 use num_complex::*;
-use sprs::{CsMatI};
 
 static DIGIT : &str = "[0-9]" ;
 static  NZDIGIT : &str = "[1-9]" ;

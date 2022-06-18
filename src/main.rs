@@ -1,11 +1,7 @@
-use std::ops::Add;
+#![allow(dead_code)]
 use num_complex::Complex64;
 use qrusty::* ;
-use qrusty::SimplePauli::* ;
-use ndarray::Array2 ;
-use sprs::* ;
 
-use qrusty::util::* ;
 use qrusty::util::list::* ;
 use qrusty::util::BinaryTreeFold ;
 
@@ -154,7 +150,7 @@ fn main3() {
     println!("{}", (*rv).to_string()) ;
 }
 fn main4() {
-    use sprs::{CsMat, CsVec};
+    use sprs::{CsMat};
     let eye : CsMat<f64> = CsMat::eye(2);
     let b = &eye + &eye;
     println!("{}",b.to_dense()) ;
