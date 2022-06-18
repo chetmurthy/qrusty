@@ -15,7 +15,7 @@ pub enum TestOperation {
 
 use TestOperation::* ;
 impl TestOperation {
-    pub fn run(&self, spop : &SparsePauliOp) {
+    pub fn to_matrix(&self, spop : &SparsePauliOp) -> sprs::CsMatI<Complex64,  u64> {
         match self {
             ToMatrix => spop.to_matrix(),
             ToMatrixBinary => spop.to_matrix_binary(),
@@ -23,7 +23,7 @@ impl TestOperation {
             ToMatrixReduce => spop.to_matrix_reduce(),
             ToMatrixRayon => spop.to_matrix_rayon(),
             ToMatrixRayonChunked(step) => spop.to_matrix_rayon_chunked(*step),
-        } ;
+        }
     }
 }
 

@@ -17,7 +17,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             tc.ops.iter()
                 .for_each(|op| {
                     group.bench_function(format!("{}+{:?}", tc.name, op), |b| b.iter(|| {
-                        op.run(&spop) ;
+                        op.to_matrix(&spop) ;
                     }));
                 }) ;
         }) ;
