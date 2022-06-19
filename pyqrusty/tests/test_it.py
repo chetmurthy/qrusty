@@ -1,6 +1,6 @@
 import pytest
 
-from pyqrusty import py_sum
+from pyqrusty import py_sum, Pauli
 
 # content of test_sample.py
 def inc(x):
@@ -12,3 +12,7 @@ def test_answer():
 
 def test_sum():
     assert py_sum(3,4) == 7
+
+def test_paulis():
+    p = Pauli('X')
+    assert p.num_qubits() == 1
