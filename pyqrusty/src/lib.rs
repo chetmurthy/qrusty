@@ -8,23 +8,23 @@ use pyo3::Python;
 #[pyclass]
 #[repr(transparent)]
 #[derive(Clone)]
-pub struct PyPauli {
+pub struct Pauli {
     pub it: qrusty::Pauli,
 }
 
-impl From<qrusty::Pauli> for PyPauli {
+impl From<qrusty::Pauli> for Pauli {
     fn from(it: qrusty::Pauli) -> Self {
-        PyPauli { it : it.clone() }
+        Pauli { it : it.clone() }
     }
 }
 
 #[pymethods]
-impl PyPauli {
+impl Pauli {
 
     #[new]
-    pub fn new(label: String) -> PyResult<PyPauli> {
+    pub fn new(label: String) -> PyResult<Pauli> {
         let it = qrusty::Pauli::new(&label) ? ;
-        Ok(PyPauli { it })
+        Ok(Pauli { it })
     }
 
     pub fn num_qubits(&self) -> usize {
@@ -40,25 +40,25 @@ impl PyPauli {
 #[pyclass]
 #[repr(transparent)]
 #[derive(Clone)]
-pub struct PySparsePauliOp {
+pub struct SparsePauliOp {
     pub it: qrusty::SparsePauliOp,
 }
 
-impl From<qrusty::SparsePauliOp> for PySparsePauliOp {
+impl From<qrusty::SparsePauliOp> for SparsePauliOp {
     fn from(it: qrusty::SparsePauliOp) -> Self {
-        PySparsePauliOp { it : it.clone() }
+        SparsePauliOp { it : it.clone() }
     }
 }
 
 #[pymethods]
-impl PySparsePauliOp {
+impl SparsePauliOp {
 
     #[new]
-    pub fn new(paulis : Vec<PyPauli>, coeffs : Vec<Complex64>) -> PyResult<PySparsePauliOp> {
+    pub fn new(paulis : Vec<Pauli>, coeffs : Vec<Complex64>) -> PyResult<SparsePauliOp> {
         let paulis = paulis.iter().map(|p| p.it.clone()).collect() ;
         let coeffs : &[Complex64] = &coeffs[..] ;
         let it = qrusty::SparsePauliOp::new(paulis, coeffs) ? ;
-        Ok(PySparsePauliOp { it })
+        Ok(SparsePauliOp { it })
     }
 
     pub fn num_qubits(&self) -> usize {
@@ -70,7 +70,7 @@ impl PySparsePauliOp {
 /// A Python module implemented in Rust.
 #[pymodule]
 fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<PyPauli>()?;
-    m.add_class::<PySparsePauliOp>()?;
+    m.add_class::<Pauli>()?;
+    m.add_class::<SparsePauliOp>()?;
     Ok(())
 }
