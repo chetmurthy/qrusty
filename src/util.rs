@@ -124,6 +124,25 @@ pub fn csmatrix_nz(it : &sprs::CsMatI<Complex64,  u64>, tolerance : f64) -> usiz
         .count()
 }
 
+pub fn csmatrix_eliminate_zeroes(it : &sprs::CsMatI<Complex64,  u64>, tolerance : f64) -> sprs::CsMatI<Complex64,  u64> {
+    let mut rows = Vec::new() ;
+    let mut cols = Vec::new() ;
+    let mut data = Vec::new() ;
+    it.view()
+        .iter_rbr()
+        .filter(|(c,_)| {
+            let c : Complex64 = **c ;
+            c.norm() > tolerance
+        })
+        .for_each(|(c,(row,col))| {
+            rows.push(row) ;
+            cols.push(col) ;
+            data.push(*c) ;
+        }) ;
+    let trimat = sprs::TriMatBase::<Vec<u64>, Vec<Complex64>>::from_triplets(it.shape(), rows, cols, data) ;
+    trimat.to_csr()
+}
+
 pub struct BinaryTreeFold<T> {
     stk : Vec<(usize, T)>,
     op : fn(l : T, r: T) -> T
@@ -245,6 +264,7 @@ mod tests {
     use num_complex::Complex64;
     use crate::util::BinaryTreeFold ;
     use crate::util::csmatrix_nz;
+    use crate::util::csmatrix_eliminate_zeroes ;
     use crate::util::list::* ;
 
     #[test]
@@ -287,6 +307,8 @@ mod tests {
         let mut scaled = sprs::CsMatI::<Complex64, u64>::eye(100) ;
         scaled.scale(Complex64::new(1e-8, 0.0)) ;
         assert_eq!(csmatrix_nz(&scaled, 1e-7), 100) ;
+        let no_zeros = csmatrix_eliminate_zeroes(&scaled, 1e-7) ;
+        assert_eq!(no_zeros.nnz(), 0) ;
     }
 
 }
