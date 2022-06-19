@@ -12,9 +12,34 @@ use regex::Regex;
 use rayon::prelude::*;
 use sprs::{CompressedStorage, TriMatI, CsMatI, kronecker_product};
 
+use pyo3::PyErr ;
+use pyo3::exceptions::PyException;
+
 mod accel ;
 pub mod util ;
 pub mod fixtures ;
+
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct QrustyErr {
+    s : &'static str
+}
+
+impl QrustyErr {
+    pub fn new(s : &'static str) -> QrustyErr {
+        QrustyErr { s }
+    }
+    pub fn message(&self) -> &'static str {
+        self.s
+    }
+}
+
+impl std::convert::From<QrustyErr> for pyo3::PyErr {
+    fn from(err: QrustyErr) -> PyErr {
+        PyException::new_err(err.message())
+    }
+}
+
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SimplePauli {
@@ -23,13 +48,13 @@ pub enum SimplePauli {
 
 use crate::SimplePauli::* ;
 impl SimplePauli {
-    pub fn new(c : char)-> Result<SimplePauli, &'static str> {
+    pub fn new(c : char)-> Result<SimplePauli, QrustyErr> {
         match c {
             'I' => Ok(I),
             'X' => Ok(X),
             'Y' => Ok(Y),
             'Z' =>  Ok(Z),
-            _ => Err("internal error: malformed pauli")
+            _ => Err(QrustyErr::new("internal error: malformed pauli"))
         }
     }
 
@@ -86,21 +111,21 @@ pub struct Pauli {
 impl Pauli {
 
     pub fn num_qubits(&self) -> usize { self.paulis.len() }
-    fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  &'static str> {
+    fn parse_label(s : &str) -> Result<(usize, Vec<SimplePauli>),  QrustyErr> {
         lazy_static! {
             static ref RE : Regex = Regex::new(r"^([+-]?)1?([ij]?)([IXYZ]+)$").unwrap();
         }
-        let caps = RE.captures(s).ok_or("error: malformed label")? ;
+        let caps = RE.captures(s).ok_or(QrustyErr::new("error: malformed label"))? ;
 
         let sign = caps.get(1).map_or("", |m| m.as_str());
         let imag = caps.get(2).map_or("", |m| m.as_str());
         let paulistr = caps.get(3).map_or("", |m| m.as_str());
 
-        let sign = match sign { ""|"+" => Ok(true), "-" => Ok(false), _ => Err("internal error: malformed sign") } ?;
+        let sign = match sign { ""|"+" => Ok(true), "-" => Ok(false), _ => Err(QrustyErr::new("internal error: malformed sign")) } ?;
         let phase : usize = match imag {
             "" => Ok(0),
             "i"|"j" => Ok(1),
-            _ => Err("internal error: malformed phase")
+            _ => Err(QrustyErr::new("internal error: malformed phase"))
         }?;
         let phase : usize = if sign { phase } else { phase+2 } ;
         
@@ -108,11 +133,11 @@ impl Pauli {
         for c in paulistr.chars().rev() {
             paulis.push(SimplePauli::new(c)?)
         }
-        if 0 == paulis.len() { Err("internal error: no paulis") }
+        if 0 == paulis.len() { Err(QrustyErr::new("internal error: no paulis")) }
         else { Ok((phase, paulis)) }
     }
 
-    pub fn new(s : &str) -> Result<Pauli, &'static str> {
+    pub fn new(s : &str) -> Result<Pauli, QrustyErr> {
         let (base_phase, paulis) = Pauli::parse_label(s)? ;
         Ok(Pauli{ base_phase, paulis })
     }
@@ -209,17 +234,17 @@ impl SparsePauliOp {
         &self.members
     }
     pub fn num_qubits(&self) -> usize { self.members[0].0.num_qubits() }
-    pub fn new(paulis : Vec<Pauli>, coeffs : &[Complex64]) -> Result<SparsePauliOp,&'static str> {
+    pub fn new(paulis : Vec<Pauli>, coeffs : &[Complex64]) -> Result<SparsePauliOp, QrustyErr> {
         if paulis.len() != coeffs.len() {
-            Err("SparsePauliOp::new: paulis and coeffs must have same length")
+            Err(QrustyErr::new("SparsePauliOp::new: paulis and coeffs must have same length"))
         }
         else if paulis.len() == 0 {
-            Err("SparsePauliOp::new: at least one pauli must be supplied")
+            Err(QrustyErr::new("SparsePauliOp::new: at least one pauli must be supplied"))
         }
         else {
             let num_qubits = paulis[0].num_qubits() ;
             if paulis.iter().any(|p| p.num_qubits() != num_qubits) {
-            Err("SparsePauliOp::new: all supplied paulis must have the same #qubits")
+            Err(QrustyErr::new("SparsePauliOp::new: all supplied paulis must have the same #qubits"))
             }
             else {
             let mut members : PauliSum = Vec::new() ;
@@ -241,7 +266,7 @@ impl SparsePauliOp {
         SparsePauliOp { members }
     }
 
-    pub fn from_labels(l : &[&str], coeffs : &[Complex64]) -> Result<SparsePauliOp, &'static str> {
+    pub fn from_labels(l : &[&str], coeffs : &[Complex64]) -> Result<SparsePauliOp, QrustyErr> {
         let mut v = Vec::new() ;
         for s in l.iter() {
             let p = Pauli::new(s)? ;
@@ -249,7 +274,7 @@ impl SparsePauliOp {
         }
         SparsePauliOp::new(v, coeffs)
     }
-    pub fn from_labels_simple(l : &[&str]) -> Result<SparsePauliOp, &'static str> {
+    pub fn from_labels_simple(l : &[&str]) -> Result<SparsePauliOp, QrustyErr> {
         let coeffs : Vec<Complex64> = l.iter()
             .map(|_| Complex64::new(1.0, 0.0))
             .collect() ;
