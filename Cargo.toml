@@ -1,33 +1,5 @@
-[package]
-name = "qrusty"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-num-traits = "0.2.15"
-num-complex = ">= 0.4, < 0.4.2"
-clap = { version = "3.0", features = ["derive"] }
-sprs = "0.11.0"
-regex = "1"
-lazy_static = "1.4.0"
-ndarray = "0.15.3"
-rayon = "1.5"
-impl_ops = "0.1.1"
-
-[dev-dependencies]
-criterion = "0.3"
-
-[[bench]]
-name = "bench1"
-harness = false
-html_reports = true
-
-[[bench]]
-name = "big_bench"
-harness = false
-html_reports = true
-
-[profile.dev]
-opt-level = 3
+members = [
+    "qrusty",
+]
