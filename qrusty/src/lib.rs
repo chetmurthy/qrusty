@@ -232,6 +232,7 @@ impl<'a> Index<isize> for SparsePauliOp {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct SparsePauliOp {
     members : PauliSum
 }

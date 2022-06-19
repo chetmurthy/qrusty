@@ -9,8 +9,21 @@ name = "pyqrusty"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.16.5", features = ["extension-module"] }
+numpy = "0.16.2"
 qrusty = { path = "../qrusty" }
+num-complex = ">= 0.4, < 0.4.2"
+
+[dependencies.pyo3]
+version = "0.16.5"
+features = ["extension-module", "hashbrown", "num-complex"]
+
+[dependencies.ndarray]
+version = "^0.15.0"
+features = ["rayon"]
+
+[dependencies.hashbrown]
+version = "0.12.1"
+features = ["rayon"]
 
 [package.metadata.maturin]
 python-source = "python"
