@@ -11,3 +11,6 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.16.5", features = ["extension-module"] }
 qrusty = { path = "../qrusty" }
+
+[package.metadata.maturin]
+python-source = "python"
