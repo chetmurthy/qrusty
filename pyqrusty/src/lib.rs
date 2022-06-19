@@ -5,6 +5,8 @@ use num_complex::Complex64;
 use pyo3::wrap_pyfunction;
 use pyo3::Python;
 use sprs::{CompressedStorage, CsMatI};
+use pyo3::PyErr ;
+use pyo3::exceptions::PyException;
 
 #[pyclass]
 #[repr(transparent)]
@@ -46,6 +48,32 @@ impl SpMat {
        self.__repr__()
    }
 
+
+    pub fn export(
+        &mut self,
+        py: Python,
+    ) -> PyResult<((usize,  usize), PyObject, PyObject, PyObject)> {
+
+        match &*(self.it) {
+            None =>
+                Err(PyException::new_err("cannot export from an already-exported sparse matrix")),
+            Some(_) => {
+                match std::mem::take(&mut *(self.it)) {
+                    None => panic!("internal error in SpMat::export"),
+                    Some(spmat) => {
+                        let shape = spmat.shape() ;
+                        let (indptr, indices, data) = spmat.into_raw_storage();
+                        Ok((
+                            shape,
+	                    data.into_pyarray(py).into(),
+	                    indices.into_pyarray(py).into(),
+	                    indptr.into_pyarray(py).into(),
+                        ))
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[pyclass]
