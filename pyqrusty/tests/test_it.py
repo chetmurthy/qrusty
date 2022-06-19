@@ -37,4 +37,10 @@ def test_spmat():
     dmat = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=complex)
     spmat = sps.csr_matrix(dmat)
     spmat2 = SpMat.new_unchecked(dmat.shape, spmat.data, spmat.indices, spmat.indptr)
+    assert repr(spmat2) == "<2x2 sparse matrix of type Complex64\n\twith 4 stored elements in Compressed Sparse Row format>"
 
+def test_spmat3():
+    dmat = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=complex)
+    spmat = sps.csr_matrix(dmat)
+    spmat2 = SpMat.new_unchecked  (dmat.shape, spmat.data, spmat.indices, spmat.indptr)
+    assert repr(spmat2) == "<3x2 sparse matrix of type Complex64\n\twith 6 stored elements in Compressed Sparse Row format>"

@@ -28,8 +28,24 @@ impl SpMat {
                 )
             } ;
         Ok(SpMat { it : Box::new(Option::Some(sp_mat)) })
-
     }
+
+   fn __repr__(&self) -> String {
+       match &*(self.it) {
+           None => "<already-dropped sparse matrix of type Complex64>".to_string(),
+           Some(spmat) => {
+               let (rows, cols) = spmat.shape() ;
+               let nnz = spmat.nnz() ;
+               format!("<{}x{} sparse matrix of type Complex64\n\twith {} stored elements in Compressed Sparse Row format>",
+                       rows,  cols, nnz)
+           }
+       }
+   }
+
+   fn __str__(&self) -> String {
+       self.__repr__()
+   }
+
 }
 
 #[pyclass]
