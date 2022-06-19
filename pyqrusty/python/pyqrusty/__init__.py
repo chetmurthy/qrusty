@@ -1,4 +1,4 @@
-from .pyqrusty import RustStruct, Pauli
+from .pyqrusty import Pauli
 
 def py_sum(a, b):
     """Returns the sum of two numbers (Python only)"""
