@@ -4,6 +4,33 @@ use numpy::{IntoPyArray, PyReadonlyArray1};
 use num_complex::Complex64;
 use pyo3::wrap_pyfunction;
 use pyo3::Python;
+use sprs::{CompressedStorage, CsMatI};
+
+#[pyclass]
+#[repr(transparent)]
+pub struct SpMat {
+    pub it: Box< Option< sprs::CsMatI<Complex64,  u64> > >,
+}
+
+#[pymethods]
+impl SpMat {
+
+    #[staticmethod]
+    pub fn new_unchecked(shape : (usize, usize), data : Vec<Complex64>, indices: Vec<u64>, indptr: Vec<u64>) -> PyResult<SpMat> {
+        let sp_mat = 
+            unsafe {
+                CsMatI::<Complex64, u64, u64>::new_unchecked(
+                    CompressedStorage::CSR,
+                    shape,
+                    indptr,
+                    indices,
+                    data,
+                )
+            } ;
+        Ok(SpMat { it : Box::new(Option::Some(sp_mat)) })
+
+    }
+}
 
 #[pyclass]
 #[repr(transparent)]
@@ -95,5 +122,6 @@ impl SparsePauliOp {
 fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Pauli>()?;
     m.add_class::<SparsePauliOp>()?;
+    m.add_class::<SpMat>()?;
     Ok(())
 }

@@ -1,6 +1,8 @@
+import numpy as np
+import scipy.sparse as sps
 import pytest
 
-from pyqrusty import py_sum, Pauli, SparsePauliOp
+from pyqrusty import py_sum, Pauli, SparsePauliOp, SpMat
 
 # content of test_sample.py
 def inc(x):
@@ -30,3 +32,9 @@ def test_spop():
     q = Pauli('IXYZ')
     spop = SparsePauliOp([p,q], [1.0 + 0.0j, 1.0 + 0.0j])
     assert repr(spop) == "SparsePauliOp('IIII','IXYZ', [1+0j, 1+0j])"
+
+def test_spmat():
+    dmat = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=complex)
+    spmat = sps.csr_matrix(dmat)
+    spmat2 = SpMat.new_unchecked(dmat.shape, spmat.data, spmat.indices, spmat.indptr)
+

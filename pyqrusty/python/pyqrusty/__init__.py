@@ -1,4 +1,4 @@
-from .pyqrusty import Pauli, SparsePauliOp
+from .pyqrusty import Pauli, SparsePauliOp, SpMat
 
 def py_sum(a, b):
     """Returns the sum of two numbers (Python only)"""
