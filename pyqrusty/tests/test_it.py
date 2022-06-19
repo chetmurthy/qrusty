@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sps
 import pytest
 
-from pyqrusty import py_sum, Pauli, SparsePauliOp, SpMat
+from pyqrusty import *
 
 # content of test_sample.py
 def inc(x):
@@ -44,4 +44,4 @@ def test_spmat3():
     spmat = sps.csr_matrix(dmat)
     spmat2 = SpMat.new_unchecked  (spmat.shape, spmat.data, spmat.indices, spmat.indptr)
     assert repr(spmat2) == "<3x2 sparse matrix of type Complex64\n\twith 6 stored elements in Compressed Sparse Row format>"
-    p = spmat2.export()
+    spmat3 = csr_matrix(spmat2)
