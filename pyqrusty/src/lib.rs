@@ -45,6 +45,11 @@ impl Pauli {
     pub fn num_qubits(&self) -> usize {
         self.it.num_qubits()
     }
+
+    pub fn label(&self) -> String {
+        self.it.label()
+    }
+
 }
 
 

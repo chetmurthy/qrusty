@@ -14,5 +14,6 @@ def test_sum():
     assert py_sum(3,4) == 7
 
 def test_paulis():
-    p = Pauli('X')
-    assert p.num_qubits() == 1
+    p = Pauli('IXYZ')
+    assert p.num_qubits() == 4
+    assert p.label() == 'IXYZ'

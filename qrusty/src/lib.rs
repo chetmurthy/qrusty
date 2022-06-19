@@ -41,7 +41,7 @@ impl std::convert::From<QrustyErr> for pyo3::PyErr {
 }
 
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SimplePauli {
     I, X, Y, Z,
 }
@@ -57,14 +57,15 @@ impl SimplePauli {
             _ => Err(QrustyErr::new("internal error: malformed pauli"))
         }
     }
+    pub fn label(self)-> char {
+        match self {
+            I => 'I',
+            X => 'X',
+            Y => 'Y',
+            Z => 'Z',
+        }
+    }
 
-/*
->>> Pauli("IXYZ").x
-array([False,  True,  True, False])
->>> Pauli("IXYZ").z
-array([ True,  True, False, False])
->>> 
-*/
     pub fn x(&self) -> bool {
         match self {
             I|Z => false,
@@ -135,6 +136,11 @@ impl Pauli {
         }
         if 0 == paulis.len() { Err(QrustyErr::new("internal error: no paulis")) }
         else { Ok((phase, paulis)) }
+    }
+    pub fn label(&self) -> String {
+        self.paulis.iter().rev().into_iter()
+            .map(|p| p.label())
+            .collect::<String>()
     }
 
     pub fn new(s : &str) -> Result<Pauli, QrustyErr> {
@@ -436,6 +442,7 @@ mod tests {
         assert_eq!(Pauli::parse_label(&"-1I".to_string()), Ok( (2_usize, vec![I]) ));
         assert_eq!(Pauli::parse_label(&"-1jIX".to_string()), Ok( (3_usize, vec![X, I]) ));
         assert_eq!(Pauli::parse_label(&"IXYZ".to_string()), Ok( (0_usize, vec![Z, Y, X, I]) ));
+        assert_eq!(Pauli::new("IXYZ").unwrap().label(), "IXYZ");
 
 /*
 >>> (Pauli("I").z, Pauli("I").x)
