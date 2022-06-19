@@ -35,6 +35,13 @@ impl Pauli {
         self.it.label()
     }
 
+   fn __repr__(&self) -> String {
+       format!("Pauli('{}')", self.it.label())
+   }
+
+   fn __str__(&self) -> String {
+       self.it.label()
+   }
 }
 
 #[pyclass]
@@ -50,7 +57,7 @@ impl From<qrusty::SparsePauliOp> for SparsePauliOp {
     }
 }
 
-#[pymethods]
+ #[pymethods]
 impl SparsePauliOp {
 
     #[new]
@@ -64,6 +71,22 @@ impl SparsePauliOp {
     pub fn num_qubits(&self) -> usize {
         self.it.num_qubits()
     }
+
+   fn __repr__(&self) -> String {
+       let labels : Vec<String> = self.it.members()
+           .iter()
+           .map(|(p,_)| p.label())
+           .collect() ;
+       let coeffs : Vec<String> = self.it.members()
+           .iter()
+           .map(|(_,c)| qrusty::util::complex64_to_string(*c))
+           .collect() ;
+       format!("SparsePauliOp('{}', [{}])", labels.join("','"), coeffs.join(", "))
+   }
+
+   fn __str__(&self) -> String {
+       self.__repr__()
+   }
 
 }
 

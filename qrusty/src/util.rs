@@ -114,6 +114,10 @@ pub fn complex64_list_from_string_list(l : &Vec<&'static str>) -> Vec<Complex64>
     l.unwrap()
 }
 
+pub fn complex64_to_string(c : Complex64) -> String {
+    format!("{}+{}j", c.re, c.im)
+}
+
 pub fn csmatrix_nz(it : &sprs::CsMatI<Complex64,  u64>, tolerance : f64) -> usize {
     it.view()
         .iter_rbr()
@@ -298,6 +302,14 @@ mod tests {
         assert!(crate::util::complex64_from_string("foo").is_err()) ;
         assert_eq!(crate::util::complex64_from_string("1+2j"), Ok(Complex64::new(1.0,  2.0))) ;
         assert_eq!(crate::util::complex64_from_string("1-2j"), Ok(Complex64::new(1.0,  -2.0))) ;
+    }
+
+    #[test]
+    fn test_print_complex64() {
+        fn roundtrip(c : Complex64) -> Complex64 {
+            crate::util::complex64_from_string(&crate::util::complex64_to_string(c)).unwrap()
+        }
+        assert_eq!(roundtrip(Complex64::new(0.0,  0.0)), Complex64::new(0.0,  0.0)) ;
     }
 
     #[test]
