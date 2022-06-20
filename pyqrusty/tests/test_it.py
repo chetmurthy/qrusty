@@ -71,9 +71,20 @@ def test_pauli_Y():
     spmat = csr_matrix(p.to_matrix())
     np.array_equal(Y, spmat.todense())
 
-def test_pauli_I_plus_X():
+def test_pauli_I_plus_Y():
     pI = Pauli("I")
-    pX = Pauli("X")
-    spop = SparsePauliOp([pI,pX], [1.0 + 0.0j, 2.0 + 0.0j])
-    spmat = csr_matrix(spop.to_matrix())
-    np.array_equal(I+2.0 * X, spmat.todense())
+    pY = Pauli("Y")
+    spop = SparsePauliOp([pI,pY], [1.0 + 0.0j, 2.0 + 0.0j])
+    spmat = spop.to_matrix()
+    target = "/tmp/I_plus_Y.mtx"
+    target2 = "/tmp/I_plus_Y-2.mtx"
+    spmat.write_to_file(target)
+    spmat2 = csr_matrix(spmat)
+    from scipy.io import mmread, mmwrite
+    mmwrite(target2, spmat2)
+    spmat3 = mmread(target)
+    np.array_equal(I+2.0 * Y, spmat2.todense())
+    np.array_equal(I+2.0 * Y, spmat3.todense())
+    from os import remove
+    remove(target)
+    remove(target2)

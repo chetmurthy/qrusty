@@ -6,6 +6,7 @@ use pyo3::wrap_pyfunction;
 use pyo3::Python;
 use sprs::{CompressedStorage, CsMatI};
 use pyo3::PyErr ;
+use pyo3::exceptions::PyOSError;
 use pyo3::exceptions::PyException;
 
 #[pyclass]
@@ -74,6 +75,21 @@ impl SpMat {
             }
         }
     }
+
+    pub fn write_to_file(
+        &mut self,
+        save_path : &str,
+    ) -> PyResult<()> {
+
+        match &*(self.it) {
+            None =>
+                Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
+            Some(spmat) => {
+                qrusty::util::write_matrix_market_for_scipy(&save_path, &spmat)
+                    .map_err(|e| PyOSError::new_err(e))
+            }
+        }
+    }
 }
 
 impl SpMat {
@@ -81,6 +97,7 @@ impl SpMat {
         SpMat { it : Box::new(Option::Some(sp_mat)) }
     }
 }
+
 #[pyclass]
 #[repr(transparent)]
 #[derive(Clone)]

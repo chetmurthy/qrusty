@@ -1,6 +1,10 @@
 #![allow(non_upper_case_globals)]
 use regex::Regex;
 use num_complex::*;
+use std::fs::File;
+use std::io;
+use std::io::Write;
+use sprs::SpIndex;
 
 static DIGIT : &str = "[0-9]" ;
 static  NZDIGIT : &str = "[1-9]" ;
@@ -145,6 +149,34 @@ pub fn csmatrix_eliminate_zeroes(it : &sprs::CsMatI<Complex64,  u64>, tolerance 
         }) ;
     let trimat = sprs::TriMatBase::<Vec<u64>, Vec<Complex64>>::from_triplets(it.shape(), rows, cols, data) ;
     trimat.to_csr()
+}
+pub fn write_matrix_market_for_scipy(
+    path: &str,
+    mat: &sprs::CsMatI<Complex64,  u64>,
+) -> Result<(), io::Error>
+{
+    let (rows, cols, nnz) = (mat.rows(), mat.cols(), mat.nnz());
+    let f = File::create(path)?;
+    let mut writer = io::BufWriter::new(f);
+
+    // header
+    let data_type = "complex";
+
+    writeln!(
+        writer,
+        "%%MatrixMarket matrix coordinate {} general",
+        data_type
+    )?;
+    writeln!(writer, "% written by sprs")?;
+
+    // dimensions and nnz
+    writeln!(writer, "{} {} {}", rows, cols, nnz)?;
+
+    // entries
+    for (val, (row, col)) in mat {
+        writeln!(writer, "{} {} {} {}", row.index() + 1, col.index() + 1, val.re, val.im)?;
+    }
+    Ok(())
 }
 
 pub struct BinaryTreeFold<T> {
