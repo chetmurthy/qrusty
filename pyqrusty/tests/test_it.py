@@ -78,7 +78,7 @@ def test_pauli_I_plus_Y():
     spmat = spop.to_matrix()
     target = "/tmp/I_plus_Y.mtx"
     target2 = "/tmp/I_plus_Y-2.mtx"
-    spmat.write_to_file(target)
+    spmat.write_to_file_for_scipy(target)
     spmat2 = csr_matrix(spmat)
     from scipy.io import mmread, mmwrite
     mmwrite(target2, spmat2)

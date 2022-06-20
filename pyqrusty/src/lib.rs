@@ -76,7 +76,7 @@ impl SpMat {
         }
     }
 
-    pub fn write_to_file(
+    pub fn write_to_file_for_scipy(
         &mut self,
         save_path : &str,
     ) -> PyResult<()> {
@@ -86,6 +86,21 @@ impl SpMat {
                 Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
             Some(spmat) => {
                 qrusty::util::write_matrix_market_for_scipy(&save_path, &spmat)
+                    .map_err(|e| PyOSError::new_err(e))
+            }
+        }
+    }
+
+    pub fn write_to_file(
+        &mut self,
+        save_path : &str,
+    ) -> PyResult<()> {
+
+        match &*(self.it) {
+            None =>
+                Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
+            Some(spmat) => {
+                sprs::io::write_matrix_market(&save_path, spmat)
                     .map_err(|e| PyOSError::new_err(e))
             }
         }
@@ -175,6 +190,22 @@ impl SparsePauliOp {
 
     pub fn to_matrix_binary(&self) -> SpMat {
         SpMat::new_from_csmatrix(self.it.to_matrix_binary())
+    }
+
+    pub fn to_matrix_accel(&self) -> SpMat {
+        SpMat::new_from_csmatrix(self.it.to_matrix_accel())
+    }
+
+    pub fn to_matrix_reduce(&self) -> SpMat {
+        SpMat::new_from_csmatrix(self.it.to_matrix_reduce())
+    }
+
+    pub fn to_matrix_rayon(&self) -> SpMat {
+        SpMat::new_from_csmatrix(self.it.to_matrix_rayon())
+    }
+
+    pub fn to_matrix_rayon_chunked(&self, step : usize) -> SpMat {
+        SpMat::new_from_csmatrix(self.it.to_matrix_rayon_chunked(step))
     }
 
     fn __repr__(&self) -> String {
