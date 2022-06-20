@@ -46,8 +46,27 @@ def test_spmat3():
     assert repr(spmat2) == "<3x2 sparse matrix of type Complex64\n\twith 6 stored elements in Compressed Sparse Row format>"
     spmat3 = csr_matrix(spmat2)
 
-def test_pauli_matrices():
+I = np.array([[1.0, 0.0],[0.0, 1.0]], dtype=complex)
+Z = np.array([[1.0, 0.0],[0.0, -1.0]], dtype=complex)
+X = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
+Y = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
+
+def test_pauli_I():
     p = Pauli("I")
     spmat = csr_matrix(p.to_spmatrix())
-    np.array_equal(np.array([[1.0, 0.0],[0.0, 1.0]], dtype=complex),
-                   spmat.todense())
+    np.array_equal(I, spmat.todense())
+
+def test_pauli_X():
+    p = Pauli("X")
+    spmat = csr_matrix(p.to_spmatrix())
+    np.array_equal(X, spmat.todense())
+
+def test_pauli_Z():
+    p = Pauli("Z")
+    spmat = csr_matrix(p.to_spmatrix())
+    np.array_equal(Z, spmat.todense())
+
+def test_pauli_Y():
+    p = Pauli("Y")
+    spmat = csr_matrix(p.to_spmatrix())
+    np.array_equal(Y, spmat.todense())

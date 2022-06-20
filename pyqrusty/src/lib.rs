@@ -152,21 +152,29 @@ impl SparsePauliOp {
         self.it.num_qubits()
     }
 
-   fn __repr__(&self) -> String {
-       let labels : Vec<String> = self.it.members()
-           .iter()
-           .map(|(p,_)| p.label())
-           .collect() ;
-       let coeffs : Vec<String> = self.it.members()
-           .iter()
-           .map(|(_,c)| qrusty::util::complex64_to_string(*c))
-           .collect() ;
-       format!("SparsePauliOp('{}', [{}])", labels.join("','"), coeffs.join(", "))
-   }
+    pub fn to_matrix(&self) -> SpMat {
+        SpMat::new_from_csmatrix(self.it.to_matrix())
+    }
 
-   fn __str__(&self) -> String {
-       self.__repr__()
-   }
+    pub fn to_matrix_binary(&self) -> SpMat {
+        SpMat::new_from_csmatrix(self.it.to_matrix_binary())
+    }
+
+    fn __repr__(&self) -> String {
+        let labels : Vec<String> = self.it.members()
+            .iter()
+            .map(|(p,_)| p.label())
+            .collect() ;
+        let coeffs : Vec<String> = self.it.members()
+            .iter()
+            .map(|(_,c)| qrusty::util::complex64_to_string(*c))
+            .collect() ;
+        format!("SparsePauliOp('{}', [{}])", labels.join("','"), coeffs.join(", "))
+    }
+
+    fn __str__(&self) -> String {
+        self.__repr__()
+    }
 
 }
 
