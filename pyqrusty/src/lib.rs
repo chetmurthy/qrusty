@@ -76,6 +76,11 @@ impl SpMat {
     }
 }
 
+impl SpMat {
+    fn new_from_csmatrix(sp_mat : sprs::CsMatI<Complex64,  u64>) -> SpMat {
+        SpMat { it : Box::new(Option::Some(sp_mat)) }
+    }
+}
 #[pyclass]
 #[repr(transparent)]
 #[derive(Clone)]
@@ -113,6 +118,10 @@ impl Pauli {
    fn __str__(&self) -> String {
        self.it.label()
    }
+
+    fn to_spmatrix(&self) -> SpMat {
+        SpMat::new_from_csmatrix(self.it.to_matrix())
+    }
 }
 
 #[pyclass]

@@ -45,3 +45,9 @@ def test_spmat3():
     spmat2 = SpMat.new_unchecked  (spmat.shape, spmat.data, spmat.indices, spmat.indptr)
     assert repr(spmat2) == "<3x2 sparse matrix of type Complex64\n\twith 6 stored elements in Compressed Sparse Row format>"
     spmat3 = csr_matrix(spmat2)
+
+def test_pauli_matrices():
+    p = Pauli("I")
+    spmat = csr_matrix(p.to_spmatrix())
+    np.array_equal(np.array([[1.0, 0.0],[0.0, 1.0]], dtype=complex),
+                   spmat.todense())
