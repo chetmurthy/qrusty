@@ -74,6 +74,6 @@ def test_pauli_Y():
 def test_pauli_I_plus_X():
     pI = Pauli("I")
     pX = Pauli("X")
-    spop = SparsePauliOp([pI,pX], [1.0 + 0.0j, 1.0 + 0.0j])
+    spop = SparsePauliOp([pI,pX], [1.0 + 0.0j, 2.0 + 0.0j])
     spmat = csr_matrix(spop.to_matrix())
-    np.array_equal(I+X, spmat.todense())
+    np.array_equal(I+2.0 * X, spmat.todense())
