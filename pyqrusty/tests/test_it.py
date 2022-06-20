@@ -53,20 +53,27 @@ Y = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
 
 def test_pauli_I():
     p = Pauli("I")
-    spmat = csr_matrix(p.to_spmatrix())
+    spmat = csr_matrix(p.to_matrix())
     np.array_equal(I, spmat.todense())
 
 def test_pauli_X():
     p = Pauli("X")
-    spmat = csr_matrix(p.to_spmatrix())
+    spmat = csr_matrix(p.to_matrix())
     np.array_equal(X, spmat.todense())
 
 def test_pauli_Z():
     p = Pauli("Z")
-    spmat = csr_matrix(p.to_spmatrix())
+    spmat = csr_matrix(p.to_matrix())
     np.array_equal(Z, spmat.todense())
 
 def test_pauli_Y():
     p = Pauli("Y")
-    spmat = csr_matrix(p.to_spmatrix())
+    spmat = csr_matrix(p.to_matrix())
     np.array_equal(Y, spmat.todense())
+
+def test_pauli_I_plus_X():
+    pI = Pauli("I")
+    pX = Pauli("X")
+    spop = SparsePauliOp([pI,pX], [1.0 + 0.0j, 1.0 + 0.0j])
+    spmat = csr_matrix(spop.to_matrix())
+    np.array_equal(I+X, spmat.todense())

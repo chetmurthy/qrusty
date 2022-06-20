@@ -119,7 +119,7 @@ impl Pauli {
        self.it.label()
    }
 
-    fn to_spmatrix(&self) -> SpMat {
+    fn to_matrix(&self) -> SpMat {
         SpMat::new_from_csmatrix(self.it.to_matrix())
     }
 }
