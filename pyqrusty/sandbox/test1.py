@@ -12,6 +12,14 @@ from fixtures import *
 
 from pyqrusty import *
 
+def timer(msg, f):
+    t0 = time.time()
+    print("START %s" % (msg,))
+    rv = f()
+    t1 = time.time()
+    print('END ELAPSED %s: %.03fms' % (msg, 1000 * (t1-t0)))
+    return rv
+
 def build_spop(fixH, m=0, n=None):
     paulis = [Pauli(label) for label in fixH[0]]
     coeffs = fixH[1]
@@ -50,26 +58,30 @@ def postprocess(evs):
     return [round_to_zero(ev) for ev in evs]
 
 def try_matrix(spmat):
-    dense = spmat.todense()
-    if not scipy.linalg.ishermitian(dense):
-        print("matrix was not hermitian")
-        return
-    print("numpy.linalg.eigh: ",  np.linalg.eigh(dense)[0])
-    print("scipy.sparse.linalg.eigsh: ",  scisparse.linalg.eigsh(spmat, k=1)[0])
+    #dense = spmat.todense()
+    #if not scipy.linalg.ishermitian(dense):
+    #    print("matrix was not hermitian")
+    #    return
+    #print("numpy.linalg.eigh: ",  timer("np.linalg.eigh", lambda: np.linalg.eigh(dense)[0][0:1]))
+    print("scipy.sparse.linalg.eigsh: ",  timer("scisparse.linalg.eigsh", lambda: scisparse.linalg.eigsh(spmat, k=1)[0]))
 
     for m in primme_methods:
         x = np.zeros(spmat.shape[0])
         x[np.argmin(spmat.diagonal())] = 1
         v0 = np.array([x])
         print("primme.eigsh(method=%s): %s" %
-              (m,postprocess(primme.eigsh(spmat, k=1, tol=1e-6, which='SM', return_eigenvectors=False, method=m))))
+              (m,postprocess(timer("primme.eigsh", lambda: primme.eigsh(spmat, k=1, tol=1e-6, which='SA', return_eigenvectors=False, method=m)))))
         print("primme.eigsh(method=%s with v0): %s" %
-              (m,postprocess(primme.eigsh(spmat, k=1, v0=v0, tol=1e-6, which='SM', return_eigenvectors=False, method=m))))
+              (m,postprocess(timer("primme.eigsh", lambda: primme.eigsh(spmat, k=1, v0=v0, tol=1e-6, which='SA', return_eigenvectors=False, method=m)))))
 
-#spop = build_spop(H2)
+spop = build_spop(H8)
 #spop = build_spop(H2,1, 2)
-spop = SparsePauliOp([Pauli('YYYY'), Pauli('XXYY')], [1.0, 1.0])
-spmat = csr_matrix(spop.to_matrix_accel())
-print(spop)
+#spop = SparsePauliOp([Pauli('YY'), Pauli('XX')], [1.0, 1.0])
+#print(spop)
+
+spmat = timer("build sparse matrix", lambda: csr_matrix(spop.to_matrix_binary()))
+
+#print(spmat.diagonal())
+#print(spmat.todense())
 print(repr(spmat))
 try_matrix(spmat)
