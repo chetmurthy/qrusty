@@ -111,3 +111,13 @@ def test_nz():
     matI = pI.to_matrix()
     matI.scale(1e-8 + 0j)
     assert matI.count_zeros() == 2
+    mat2 = matI.eliminate_zeros()
+    assert mat2.count_zeros() == 0
+    assert mat2.nnz() == 0
+    
+
+def test_copy():
+    pI = Pauli("I")
+    matI = pI.to_matrix()
+    import copy
+    mat2 = copy.copy(matI)

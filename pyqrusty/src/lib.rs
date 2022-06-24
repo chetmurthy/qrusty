@@ -63,6 +63,10 @@ impl SpMat {
         Ok(SpMat { it : Box::new(Option::Some(sp_mat)) })
     }
 
+    fn __copy__(&self) -> SpMat {
+        SpMat { it : Box::new((&*self.it).clone()) }
+    }
+
     fn __repr__(&self) -> String {
         match &*(self.it) {
             None => "<already-dropped sparse matrix of type Complex64>".to_string(),
@@ -119,6 +123,15 @@ impl SpMat {
             Some(spmat) => {
                 let mat = qrusty::util::csmatrix_eliminate_zeroes(&spmat, tolerance) ;
                 Ok(SpMat { it : Box::new(Option::Some(mat)) })
+            }
+        }
+    }
+
+    fn nnz(&self) -> PyResult<usize> {
+        match &*(self.it) {
+            None => Err(PyException::new_err("cannot get NNZ of an exported sparse matrix")),
+            Some(spmat) => {
+                Ok(spmat.nnz())
             }
         }
     }
