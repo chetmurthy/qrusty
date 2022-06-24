@@ -16,29 +16,33 @@ pub struct SpMat {
 }
 
 impl SpMat {
-  fn binop(&self, other: &SpMat, name: &str, f : fn (&sprs::CsMatI<Complex64,  u64>, &sprs::CsMatI<Complex64,  u64>) -> sprs::CsMatI<Complex64,  u64>) -> PyResult<SpMat> {
+    fn binop(&self, other: &SpMat, name: &str, f : fn (&sprs::CsMatI<Complex64,  u64>, &sprs::CsMatI<Complex64,  u64>) -> sprs::CsMatI<Complex64,  u64>) -> PyResult<SpMat> {
 
-      match (&*(self.it), &*(other.it)) {
-          (Some(lhs), Some(rhs)) => {
-              (lhs.shape() == rhs.shape()).then(|| ())
-              .ok_or(PyException::new_err(format!("cannot {} matrices with different shapes", name)))? ;
-          let mat : sprs::CsMatI<Complex64,  u64> = f(lhs, rhs) ;
-              Ok(SpMat { it : Box::new(Option::Some(mat)) })
-          },
-          _ => Err(PyException::new_err(format!("cannot {} already-exported sparse matrices", name)))
-      }
-  }
+        match (&*(self.it), &*(other.it)) {
+            (Some(lhs), Some(rhs)) => {
+                (lhs.shape() == rhs.shape()).then(|| ())
+                    .ok_or(PyException::new_err(format!("cannot {} matrices with different shapes", name)))? ;
+                let mat : sprs::CsMatI<Complex64,  u64> = f(lhs, rhs) ;
+                Ok(SpMat::new_from_csmatrix(mat))
+            },
+            _ => Err(PyException::new_err(format!("cannot {} already-exported sparse matrices", name)))
+        }
+    }
 
-  fn unop(&self, name: &str, f : fn (&sprs::CsMatI<Complex64,  u64>) -> sprs::CsMatI<Complex64,  u64>) -> PyResult<SpMat> {
+    fn unop(&self, name: &str, f : fn (&sprs::CsMatI<Complex64,  u64>) -> sprs::CsMatI<Complex64,  u64>) -> PyResult<SpMat> {
 
-      match &*(self.it) {
-          Some(lhs) => {
-          let mat : sprs::CsMatI<Complex64,  u64> = f(lhs) ;
-              Ok(SpMat { it : Box::new(Option::Some(mat)) })
-          },
-          _ => Err(PyException::new_err(format!("cannot {} already-exported sparse matrix", name)))
-      }
-  }
+        match &*(self.it) {
+            Some(lhs) => {
+                let mat : sprs::CsMatI<Complex64,  u64> = f(lhs) ;
+                Ok(SpMat { it : Box::new(Option::Some(mat)) })
+            },
+            _ => Err(PyException::new_err(format!("cannot {} already-exported sparse matrix", name)))
+        }
+    }
+
+    fn new_from_csmatrix(sp_mat : sprs::CsMatI<Complex64,  u64>) -> SpMat {
+        SpMat { it : Box::new(Option::Some(sp_mat)) }
+    }
 }
 
 #[pymethods]
@@ -173,12 +177,6 @@ impl SpMat {
                     .map_err(|e| PyOSError::new_err(e))
             }
         }
-    }
-}
-
-impl SpMat {
-    fn new_from_csmatrix(sp_mat : sprs::CsMatI<Complex64,  u64>) -> SpMat {
-        SpMat { it : Box::new(Option::Some(sp_mat)) }
     }
 }
 
