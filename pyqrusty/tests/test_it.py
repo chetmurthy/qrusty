@@ -54,22 +54,22 @@ Y = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
 def test_pauli_I():
     p = Pauli("I")
     spmat = csr_matrix(p.to_matrix())
-    np.array_equal(I, spmat.todense())
+    assert np.array_equal(I, spmat.todense())
 
 def test_pauli_X():
     p = Pauli("X")
     spmat = csr_matrix(p.to_matrix())
-    np.array_equal(X, spmat.todense())
+    assert np.array_equal(X, spmat.todense())
 
 def test_pauli_Z():
     p = Pauli("Z")
     spmat = csr_matrix(p.to_matrix())
-    np.array_equal(Z, spmat.todense())
+    assert np.array_equal(Z, spmat.todense())
 
 def test_pauli_Y():
     p = Pauli("Y")
     spmat = csr_matrix(p.to_matrix())
-    np.array_equal(Y, spmat.todense())
+    assert np.array_equal(Y, spmat.todense())
 
 def test_pauli_I_plus_Y():
     pI = Pauli("I")
@@ -83,8 +83,31 @@ def test_pauli_I_plus_Y():
     from scipy.io import mmread, mmwrite
     mmwrite(target2, spmat2)
     spmat3 = mmread(target)
-    np.array_equal(I+2.0 * Y, spmat2.todense())
-    np.array_equal(I+2.0 * Y, spmat3.todense())
+    assert np.array_equal(I+2.0 * Y, spmat2.todense())
+    assert np.array_equal(I+2.0 * Y, spmat3.todense())
     from os import remove
     remove(target)
     remove(target2)
+
+def test_add():
+    pI = Pauli("I")
+    pX = Pauli("X")
+    matI = pI.to_matrix()
+    matX = pX.to_matrix()
+    matsum = matI + matX
+    l = csr_matrix(matsum)
+    assert np.array_equal(l.todense(), (I+X))
+
+
+def test_sub():
+    pI = Pauli("I")
+    matI = pI.to_matrix()
+    matsub = matI - matI
+    l = csr_matrix(matsub)
+    assert np.array_equal(l.todense(), (I-I))
+
+def test_nz():
+    pI = Pauli("I")
+    matI = pI.to_matrix()
+    matI.scale(1e-8 + 0j)
+    assert matI.count_zeros() == 2

@@ -15,6 +15,32 @@ pub struct SpMat {
     pub it: Box< Option< sprs::CsMatI<Complex64,  u64> > >,
 }
 
+impl SpMat {
+  fn binop(&self, other: &SpMat, name: &str, f : fn (&sprs::CsMatI<Complex64,  u64>, &sprs::CsMatI<Complex64,  u64>) -> sprs::CsMatI<Complex64,  u64>) -> PyResult<SpMat> {
+
+      match (&*(self.it), &*(other.it)) {
+          (Some(lhs), Some(rhs)) => {
+              (lhs.shape() == rhs.shape()).then(|| ())
+              .ok_or(PyException::new_err(format!("cannot {} matrices with different shapes", name)))? ;
+          let mat : sprs::CsMatI<Complex64,  u64> = f(lhs, rhs) ;
+              Ok(SpMat { it : Box::new(Option::Some(mat)) })
+          },
+          _ => Err(PyException::new_err(format!("cannot {} already-exported sparse matrices", name)))
+      }
+  }
+
+  fn unop(&self, name: &str, f : fn (&sprs::CsMatI<Complex64,  u64>) -> sprs::CsMatI<Complex64,  u64>) -> PyResult<SpMat> {
+
+      match &*(self.it) {
+          Some(lhs) => {
+          let mat : sprs::CsMatI<Complex64,  u64> = f(lhs) ;
+              Ok(SpMat { it : Box::new(Option::Some(mat)) })
+          },
+          _ => Err(PyException::new_err(format!("cannot {} already-exported sparse matrix", name)))
+      }
+  }
+}
+
 #[pymethods]
 impl SpMat {
 
@@ -33,22 +59,65 @@ impl SpMat {
         Ok(SpMat { it : Box::new(Option::Some(sp_mat)) })
     }
 
-   fn __repr__(&self) -> String {
-       match &*(self.it) {
-           None => "<already-dropped sparse matrix of type Complex64>".to_string(),
-           Some(spmat) => {
-               let (rows, cols) = spmat.shape() ;
-               let nnz = spmat.nnz() ;
-               format!("<{}x{} sparse matrix of type Complex64\n\twith {} stored elements in Compressed Sparse Row format>",
-                       rows,  cols, nnz)
-           }
-       }
-   }
+    fn __repr__(&self) -> String {
+        match &*(self.it) {
+            None => "<already-dropped sparse matrix of type Complex64>".to_string(),
+            Some(spmat) => {
+                let (rows, cols) = spmat.shape() ;
+                let nnz = spmat.nnz() ;
+                format!("<{}x{} sparse matrix of type Complex64\n\twith {} stored elements in Compressed Sparse Row format>",
+                        rows,  cols, nnz)
+            }
+        }
+    }
+    
+    fn __str__(&self) -> String {
+        self.__repr__()
+    }
+    
+    fn __add__(&self, other: &SpMat) -> PyResult<SpMat> {
+        self.binop(other, "add",  |x,y| x+y)
+    }
+    
+    fn __sub__(&self, other: &SpMat) -> PyResult<SpMat> {
+        self.binop(other, "subtract",  |x,y| x-y)
+    }
 
-   fn __str__(&self) -> String {
-       self.__repr__()
-   }
+    fn scale(&mut self, factor: Complex64) -> PyResult<()> {
+      match &mut *(self.it) {
+          Some(lhs) => {
+              lhs.scale(factor) ;
+              Ok(())
+          },
+          _ => Err(PyException::new_err(format!("cannot scale already-exported sparse matrix")))
+      }
+    }
 
+/*    
+    fn __neg__(&self) -> PyResult<SpMat> {
+        self.binop("negate",  |y: &CsMatI::<Complex64, u64, u64>| -y)
+    }
+  */  
+    #[args(tolerance = "1e-7")]
+    fn count_zeros(&self,  tolerance: f64) -> PyResult<usize> {
+        match &*(self.it) {
+            None => Err(PyException::new_err("cannot count zeroes of an exported sparse matrix")),
+            Some(spmat) => {
+                Ok(qrusty::util::csmatrix_nz(&spmat, tolerance))
+            }
+        }
+    }
+    
+    #[args(tolerance = "1e-7")]
+    fn eliminate_zeros(&self,  tolerance: f64) -> PyResult<SpMat> {
+        match &*(self.it) {
+            None => Err(PyException::new_err("cannot eliminate zeroes of an exported sparse matrix")),
+            Some(spmat) => {
+                let mat = qrusty::util::csmatrix_eliminate_zeroes(&spmat, tolerance) ;
+                Ok(SpMat { it : Box::new(Option::Some(mat)) })
+            }
+        }
+    }
 
     pub fn export(
         &mut self,
