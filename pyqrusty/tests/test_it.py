@@ -1,6 +1,7 @@
+import pytest
+
 import numpy as np
 import scipy.sparse as sps
-import pytest
 
 from pyqrusty import *
 
@@ -78,7 +79,7 @@ def test_pauli_I_plus_Y():
     spmat = spop.to_matrix()
     target = "/tmp/I_plus_Y.mtx"
     target2 = "/tmp/I_plus_Y-2.mtx"
-    spmat.write_to_file_for_scipy(target)
+    spmat.matrixmarket_write(target)
     spmat2 = csr_matrix(spmat)
     from scipy.io import mmread, mmwrite
     mmwrite(target2, spmat2)
@@ -121,3 +122,34 @@ def test_copy():
     matI = pI.to_matrix()
     import copy
     mat2 = copy.copy(matI)
+
+from scipy.io import mmread, mmwrite
+
+def write_roundtrip(path, m):
+    import copy
+    m = copy.copy(m)
+    m.matrixmarket_write(str(path))
+    m2 = mmread(path)
+    assert np.array_equal(csr_matrix(m).todense(), m2.todense())
+
+def write_roundtrip2(path, spmat, symmetry=None):
+    mmwrite(str(path), spmat, symmetry=symmetry)
+    spmat2 = mmread(str(path))
+    assert np.array_equal(spmat2.todense(), spmat.todense())
+    m = SpMat.matrixmarket_read(str(path))
+    assert np.array_equal(csr_matrix(m).todense(), spmat.todense())
+
+def test_write(tmp_path):
+    pI = Pauli("I")
+    matI = pI.to_matrix()
+    write_roundtrip(tmp_path / "I.mtx", matI)
+    spmatI = csr_matrix(matI)
+    write_roundtrip2(tmp_path / "I2.mtx", spmatI, symmetry="symmetric")
+    write_roundtrip2(tmp_path / "I3.mtx", spmatI, symmetry="hermitian")
+
+    pY = Pauli("Y")
+    matY = pY.to_matrix()
+    write_roundtrip(tmp_path / "Y.mtx", matY)
+    spmatY = csr_matrix(matY)
+    write_roundtrip2(tmp_path / "Y2.mtx", spmatY, symmetry="skew-symmetric")
+    write_roundtrip2(tmp_path / "Y3.mtx", spmatY, symmetry="hermitian")

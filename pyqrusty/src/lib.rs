@@ -4,10 +4,12 @@ use numpy::{IntoPyArray, PyReadonlyArray1};
 use num_complex::Complex64;
 use pyo3::wrap_pyfunction;
 use pyo3::Python;
-use sprs::{CompressedStorage, CsMatI};
 use pyo3::PyErr ;
 use pyo3::exceptions::PyOSError;
 use pyo3::exceptions::PyException;
+
+use sprs::{CompressedStorage, CsMatI, TriMatI};
+use sprs::io::SymmetryMode ;
 
 #[pyclass]
 #[repr(transparent)]
@@ -43,6 +45,36 @@ impl SpMat {
     fn new_from_csmatrix(sp_mat : sprs::CsMatI<Complex64,  u64>) -> SpMat {
         SpMat { it : Box::new(Option::Some(sp_mat)) }
     }
+
+    fn map_immut<R,OKF, ERRF>(&self, errf : ERRF, okf : OKF) -> R
+    where OKF: Fn (&CsMatI::<Complex64, u64, u64>) -> R,
+    ERRF : Fn () -> R
+    {
+        match &*(self.it) {
+            None => errf(),
+            Some(spmat) => okf(spmat)
+        }
+    }
+    fn iter_mut<E, OKF, ERRF>(&mut self, errf : ERRF, okf : OKF) -> Result<(), E>
+    where OKF : Fn (&mut CsMatI::<Complex64, u64, u64>) -> (),
+    ERRF : Fn () -> E
+    {
+        match &mut *(self.it) {
+            None => Err(errf()),
+            Some(spmat) => Ok(okf(spmat))
+        }
+    }
+
+    fn parse_symmetry_mode(mode : &str) -> PyResult<sprs::io::SymmetryMode> {
+        match mode {
+            ""|"general" => Ok(SymmetryMode::General),
+            "hermitian" => Ok(SymmetryMode::Hermitian),
+            "symmetric" => Ok(SymmetryMode::Symmetric),
+            "skew-symmetric" => Ok(SymmetryMode::SkewSymmetric),
+            _ => Err(PyException::new_err(format!("amtrixmarket_write_symmetric: unrecognized mode {}", mode)))
+        }
+    }
+
 }
 
 #[pymethods]
@@ -68,15 +100,13 @@ impl SpMat {
     }
 
     fn __repr__(&self) -> String {
-        match &*(self.it) {
-            None => "<already-dropped sparse matrix of type Complex64>".to_string(),
-            Some(spmat) => {
-                let (rows, cols) = spmat.shape() ;
-                let nnz = spmat.nnz() ;
-                format!("<{}x{} sparse matrix of type Complex64\n\twith {} stored elements in Compressed Sparse Row format>",
-                        rows,  cols, nnz)
-            }
-        }
+        self.map_immut(|| "<already-dropped sparse matrix of type Complex64>".to_string(),
+                        |spmat| {
+                            let (rows, cols) = spmat.shape() ;
+                            let nnz = spmat.nnz() ;
+                            format!("<{}x{} sparse matrix of type Complex64\n\twith {} stored elements in Compressed Sparse Row format>",
+                                    rows,  cols, nnz)
+                        })
     }
     
     fn __str__(&self) -> String {
@@ -92,13 +122,10 @@ impl SpMat {
     }
 
     fn scale(&mut self, factor: Complex64) -> PyResult<()> {
-      match &mut *(self.it) {
-          Some(lhs) => {
-              lhs.scale(factor) ;
-              Ok(())
-          },
-          _ => Err(PyException::new_err(format!("cannot scale already-exported sparse matrix")))
-      }
+        self.iter_mut(|| PyException::new_err(format!("cannot scale already-exported sparse matrix")),
+                      |lhs| {
+                          lhs.scale(factor) ;
+                      })
     }
 
 /*    
@@ -108,32 +135,22 @@ impl SpMat {
   */  
     #[args(tolerance = "1e-7")]
     fn count_zeros(&self,  tolerance: f64) -> PyResult<usize> {
-        match &*(self.it) {
-            None => Err(PyException::new_err("cannot count zeroes of an exported sparse matrix")),
-            Some(spmat) => {
-                Ok(qrusty::util::csmatrix_nz(&spmat, tolerance))
-            }
-        }
+        self.map_immut(|| Err(PyException::new_err("cannot count zeroes of an exported sparse matrix")),
+                       |spmat| Ok(qrusty::util::csmatrix_nz(&spmat, tolerance)))
     }
     
     #[args(tolerance = "1e-7")]
     fn eliminate_zeros(&self,  tolerance: f64) -> PyResult<SpMat> {
-        match &*(self.it) {
-            None => Err(PyException::new_err("cannot eliminate zeroes of an exported sparse matrix")),
-            Some(spmat) => {
-                let mat = qrusty::util::csmatrix_eliminate_zeroes(&spmat, tolerance) ;
-                Ok(SpMat { it : Box::new(Option::Some(mat)) })
-            }
-        }
+        self.map_immut(|| Err(PyException::new_err("cannot eliminate zeroes of an exported sparse matrix")),
+                       |spmat| {
+                           let mat = qrusty::util::csmatrix_eliminate_zeroes(&spmat, tolerance) ;
+                           Ok(SpMat { it : Box::new(Option::Some(mat)) })
+                       })
     }
 
     fn nnz(&self) -> PyResult<usize> {
-        match &*(self.it) {
-            None => Err(PyException::new_err("cannot get NNZ of an exported sparse matrix")),
-            Some(spmat) => {
-                Ok(spmat.nnz())
-            }
-        }
+        self.map_immut(|| Err(PyException::new_err("cannot get NNZ of an exported sparse matrix")),
+                       |spmat| Ok(spmat.nnz()))
     }
 
     pub fn export(
@@ -162,34 +179,37 @@ impl SpMat {
         }
     }
 
-    pub fn write_to_file_for_scipy(
+    pub fn matrixmarket_write(
         &mut self,
         save_path : &str,
     ) -> PyResult<()> {
-
-        match &*(self.it) {
-            None =>
-                Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
-            Some(spmat) => {
-                qrusty::util::write_matrix_market_for_scipy(&save_path, &spmat)
-                    .map_err(|e| PyOSError::new_err(e))
-            }
-        }
+        self.map_immut(|| Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
+                       |spmat|
+                       sprs::io::write_matrix_market(&save_path, spmat)
+                       .map_err(|e| PyOSError::new_err(e)))
     }
 
-    pub fn write_to_file(
+    #[staticmethod]
+    pub fn matrixmarket_read(
+        read_path : &str,
+    ) -> PyResult<SpMat> {
+        let trimat : TriMatI<Complex64, u64> = sprs::io::read_matrix_market(read_path)
+            .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e))) ? ;
+        let spmat = trimat.to_csr() ;
+        Ok(SpMat::new_from_csmatrix(spmat))
+    }
+
+    #[args(mode = "\"general\"")]
+    pub fn matrixmarket_write_symmetric(
         &mut self,
         save_path : &str,
+        mode : &str,
     ) -> PyResult<()> {
-
-        match &*(self.it) {
-            None =>
-                Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
-            Some(spmat) => {
-                sprs::io::write_matrix_market(&save_path, spmat)
-                    .map_err(|e| PyOSError::new_err(e))
-            }
-        }
+        let mode = SpMat::parse_symmetry_mode(mode) ? ;
+        self.map_immut(|| Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
+                       |spmat|
+                       sprs::io::write_matrix_market_sym(&save_path, spmat, mode)
+                       .map_err(|e| PyOSError::new_err(e)))
     }
 }
 
