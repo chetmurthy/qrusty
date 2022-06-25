@@ -9,7 +9,8 @@ edition = "2021"
 num-traits = "0.2.15"
 num-complex = ">= 0.4, < 0.4.2"
 clap = { version = "3.0", features = ["derive"] }
-sprs = "0.11.0"
+flate2 = "1.0.24"
+sprs = { path = "../../sprs/sprs" }
 regex = "1"
 lazy_static = "1.4.0"
 ndarray = "0.15.3"

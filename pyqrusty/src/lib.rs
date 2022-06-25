@@ -1,4 +1,7 @@
 #![allow(unused_imports)]
+use std::fs::File;
+use std::io;
+use std::path::Path;
 use pyo3::prelude::*;
 use numpy::{IntoPyArray, PyReadonlyArray1};
 use num_complex::Complex64;
@@ -193,8 +196,30 @@ impl SpMat {
     pub fn matrixmarket_read(
         read_path : &str,
     ) -> PyResult<SpMat> {
-        let trimat : TriMatI<Complex64, u64> = sprs::io::read_matrix_market(read_path)
-            .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e))) ? ;
+        let path = Path::new(read_path) ;
+
+        let trimat : TriMatI<Complex64, u64> = match path.extension() {
+            Some(ext) =>
+                if "mm" == ext || "mtx" == ext {
+                    qrusty::util::fileio::with_file(path,
+                                                    |reader|{
+                                                        sprs::io::read_matrix_market_from_bufread(reader)
+                                                            .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e)))
+                                                    })
+                } else if "gz" == ext {
+                    qrusty::util::fileio::with_gzip_file(path,
+                                                         |reader|{
+                                                             sprs::io::read_matrix_market_from_bufread(reader)
+                                                                 .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e)))
+                                                         })
+                } else {
+                    Err(PyException::new_err(format!("matrixmarket_read: file {:?} none of gz, mtx, mm extensions", path)))
+                },
+
+            | _ => Err(PyException::new_err(format!("matrixmarket_read: file {:?} none of gz, mtx, mm extensions", path)))
+
+        }? ;
+
         let spmat = trimat.to_csr() ;
         Ok(SpMat::new_from_csmatrix(spmat))
     }

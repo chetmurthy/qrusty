@@ -139,6 +139,17 @@ def write_roundtrip2(path, spmat, symmetry=None):
     m = SpMat.matrixmarket_read(str(path))
     assert np.array_equal(csr_matrix(m).todense(), spmat.todense())
 
+from subprocess import check_call
+
+def write_roundtrip2_gzip(path, spmat, symmetry=None):
+    mmwrite(str(path), spmat, symmetry=symmetry)
+    spmat2 = mmread(str(path))
+    assert np.array_equal(spmat2.todense(), spmat.todense())
+    check_call(['gzip', str(path)])
+    gzpath = str(path) + ".gz"
+    m = SpMat.matrixmarket_read(gzpath)
+    assert np.array_equal(csr_matrix(m).todense(), spmat.todense())
+
 def test_write(tmp_path):
     pI = Pauli("I")
     matI = pI.to_matrix()
@@ -152,4 +163,6 @@ def test_write(tmp_path):
     write_roundtrip(tmp_path / "Y.mtx", matY)
     spmatY = csr_matrix(matY)
     write_roundtrip2(tmp_path / "Y2.mtx", spmatY, symmetry="skew-symmetric")
+    write_roundtrip2_gzip(tmp_path / "Y2.mtx", spmatY, symmetry="skew-symmetric")
     write_roundtrip2(tmp_path / "Y3.mtx", spmatY, symmetry="hermitian")
+    write_roundtrip2_gzip(tmp_path / "Y3.mtx", spmatY, symmetry="hermitian")

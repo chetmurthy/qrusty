@@ -294,6 +294,37 @@ pub mod list {
     }
 }
 
+pub mod fileio {
+    use flate2::bufread::GzDecoder;
+    use std::io;
+    use std::io::BufReader;
+    use std::fs::File;
+    use std::path::Path;
+
+    pub fn with_file<R, E>(p : &Path,
+                           f : fn(&mut io::BufReader<File>) -> Result<R, E>,
+    ) -> Result<R, E>
+    where E : From<io::Error>
+    {
+        let fp = File::open(p)?;
+        let mut reader = io::BufReader::new(fp);
+        let rv = f(&mut reader) ;
+        return rv ;
+    }
+
+    pub fn with_gzip_file<R, E>(p : &Path,
+                                 f : fn(&mut BufReader<GzDecoder<BufReader<File>>>) -> Result<R, E>,
+    ) -> Result<R, E>
+    where E : From<io::Error>
+    {
+        let fp = File::open(p)?;
+        let mut buf = io::BufReader::new(fp);
+        let mut reader = GzDecoder::new(buf);
+        let mut buf = io::BufReader::new(reader);
+        let rv = f(&mut buf) ;
+        return rv ;
+    }
+}
 
 #[cfg(test)]
 mod tests {
