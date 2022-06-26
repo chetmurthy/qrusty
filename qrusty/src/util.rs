@@ -348,32 +348,6 @@ pub mod fileio {
         }
     }
 
-    pub fn with_plain_output_file<R, E, P>(p : &P,
-                                  f : &dyn Fn(&mut io::BufWriter<File>) -> Result<R, E>,
-    ) -> Result<R, E>
-    where E : From<io::Error>,
-          P: AsRef<Path>,
-    {
-        let fp = File::create(p)?;
-        let mut writer = io::BufWriter::new(fp);
-        let rv = f(&mut writer) ;
-        return rv ;
-    }
-
-
-    pub fn with_gzip_output_file<R, E, P>(p : &P,
-                                  f : &dyn Fn(&mut io::BufWriter<GzEncoder<File>>) -> Result<R, E>,
-    ) -> Result<R, E>
-    where E : From<io::Error>,
-          P: AsRef<Path>,
-    {
-        let fp = File::create(p)?;
-        let mut e = GzEncoder::new(fp, Compression::default());
-        let mut writer = io::BufWriter::new(e);
-        let rv = f(&mut writer) ;
-        return rv ;
-    }
-
 }
 
 #[cfg(test)]

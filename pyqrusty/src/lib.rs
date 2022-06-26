@@ -12,7 +12,10 @@ use pyo3::exceptions::PyOSError;
 use pyo3::exceptions::PyException;
 
 use sprs::{CompressedStorage, CsMatI, TriMatI};
-use sprs::io::SymmetryMode ;
+use sprs::io::{ read_matrix_market_from_bufread, write_matrix_market_to_bufwrite, SymmetryMode::* } ;
+
+
+use qrusty::util::fileio::{ with_output_file, with_input_file } ;
 
 #[pyclass]
 #[repr(transparent)]
@@ -70,11 +73,11 @@ impl SpMat {
 
     fn parse_symmetry_mode(mode : &str) -> PyResult<sprs::io::SymmetryMode> {
         match mode {
-            ""|"general" => Ok(SymmetryMode::General),
-            "hermitian" => Ok(SymmetryMode::Hermitian),
-            "symmetric" => Ok(SymmetryMode::Symmetric),
-            "skew-symmetric" => Ok(SymmetryMode::SkewSymmetric),
-            _ => Err(PyException::new_err(format!("amtrixmarket_write_symmetric: unrecognized mode {}", mode)))
+            ""|"general" => Ok(General),
+            "hermitian" => Ok(Hermitian),
+            "symmetric" => Ok(Symmetric),
+            "skew-symmetric" => Ok(SkewSymmetric),
+            _ => Err(PyException::new_err(format!("matrixmarket_write_symmetric: unrecognized mode {}", mode)))
         }
     }
 
@@ -188,15 +191,13 @@ impl SpMat {
     ) -> PyResult<()> {
         let path = Path::new(save_path) ;
 
-        qrusty::util::fileio::with_output_file(&path,
-                                               &|writer|{
-                                                   self.map_immut(|| Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
-                                                                  |spmat|
-                                                                  sprs::io::write_matrix_market_to_bufwrite(writer, spmat)
-                                                                  .map_err(|e| PyOSError::new_err(e)))
-                                               }) ;
-        Ok(())
-
+        with_output_file(&path,
+                         &|writer|{
+                             self.map_immut(|| Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
+                                            |spmat|
+                                            sprs::io::write_matrix_market_to_bufwrite(writer, spmat)
+                                            .map_err(|e| PyOSError::new_err(e)))
+                         })
     }
 
     #[staticmethod]
@@ -206,11 +207,11 @@ impl SpMat {
         let path = Path::new(read_path) ;
 
         let trimat : TriMatI<Complex64, u64> =
-            qrusty::util::fileio::with_input_file(path,
-                                                  &|reader : &mut dyn io::BufRead|{
-                                                      sprs::io::read_matrix_market_from_bufread(reader)
-                                                          .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e)))
-                                                  })?;
+            with_input_file(path,
+                            &|reader : &mut dyn io::BufRead|{
+                                sprs::io::read_matrix_market_from_bufread(reader)
+                                    .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e)))
+                            })?;
 
         let spmat = trimat.to_csr() ;
         Ok(SpMat::new_from_csmatrix(spmat))
