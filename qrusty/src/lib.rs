@@ -18,6 +18,7 @@ use pyo3::exceptions::PyException;
 mod accel ;
 pub mod util ;
 pub mod fixtures ;
+pub mod rawio ;
 
 
 #[derive(Debug, PartialEq, Eq, Clone)]
