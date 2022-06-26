@@ -188,29 +188,15 @@ impl SpMat {
     ) -> PyResult<()> {
         let path = Path::new(save_path) ;
 
-        match path.extension() {
-            Some(ext) =>
-                if "mm" == ext || "mtx" == ext {
-                    qrusty::util::fileio::with_output_file(&path,
-                                                         &|writer|{
-                                                             self.map_immut(|| Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
-                                                                            |spmat|
-                                                                            sprs::io::write_matrix_market_to_bufwrite(writer, spmat)
-                                                                            .map_err(|e| PyOSError::new_err(e)))
-                                                         })
-                } else if "gz" == ext {
-                    qrusty::util::fileio::with_gzip_output_file(&path,
-                                                                &|writer|{
-                                                                  self.map_immut(|| Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
-                                                                                 |spmat|
-                                                                                 sprs::io::write_matrix_market_to_bufwrite(writer, spmat)
-                                                                                 .map_err(|e| PyOSError::new_err(e)))
-                                                              })
-                } else {
-                    Err(PyException::new_err(format!("matrixmarket_write: file {:?} none of gz, mtx, mm extensions", path)))
-                },
-            | _ => Err(PyException::new_err(format!("matrixmarket_write: file {:?} none of gz, mtx, mm extensions", path)))
-        }
+        qrusty::util::fileio::with_output_file(&path,
+                                               &|writer|{
+                                                   self.map_immut(|| Err(PyException::new_err("cannot write an already-destroyed sparse matrix")),
+                                                                  |spmat|
+                                                                  sprs::io::write_matrix_market_to_bufwrite(writer, spmat)
+                                                                  .map_err(|e| PyOSError::new_err(e)))
+                                               }) ;
+        Ok(())
+
     }
 
     #[staticmethod]
@@ -219,27 +205,12 @@ impl SpMat {
     ) -> PyResult<SpMat> {
         let path = Path::new(read_path) ;
 
-        let trimat : TriMatI<Complex64, u64> = match path.extension() {
-            Some(ext) =>
-                if "mm" == ext || "mtx" == ext {
-                    qrusty::util::fileio::with_input_file(&path,
-                                                          &|reader|{
-                                                              sprs::io::read_matrix_market_from_bufread(reader)
-                                                                  .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e)))
-                                                          })
-                } else if "gz" == ext {
-                    qrusty::util::fileio::with_gzip_input_file(&path,
-                                                               &|reader|{
-                                                                   sprs::io::read_matrix_market_from_bufread(reader)
-                                                                       .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e)))
-                                                               })
-                } else {
-                    Err(PyException::new_err(format!("matrixmarket_read: file {:?} none of gz, mtx, mm extensions", path)))
-                },
-
-            | _ => Err(PyException::new_err(format!("matrixmarket_read: file {:?} none of gz, mtx, mm extensions", path)))
-
-        }? ;
+        let trimat : TriMatI<Complex64, u64> =
+            qrusty::util::fileio::with_input_file(path,
+                                                  &|reader : &mut dyn io::BufRead|{
+                                                      sprs::io::read_matrix_market_from_bufread(reader)
+                                                          .map_err(|e| PyException::new_err(format!("matrixmarket_read: {}", e)))
+                                                  })?;
 
         let spmat = trimat.to_csr() ;
         Ok(SpMat::new_from_csmatrix(spmat))

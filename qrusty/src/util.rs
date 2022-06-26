@@ -303,33 +303,52 @@ pub mod fileio {
     use std::fs::File;
     use std::path::Path;
 
-    pub fn with_input_file<R, E, P>(p : &P,
-                           f : &dyn Fn(&mut io::BufReader<File>) -> Result<R, E>,
+    pub fn with_input_file<R, E>(p : &Path,
+                           f : &dyn Fn(&mut dyn io::BufRead) -> Result<R, E>,
     ) -> Result<R, E>
-    where E : From<io::Error>,
-          P: AsRef<Path>,
+    where E : From<io::Error>
     {
-        let fp = File::open(p)?;
-        let mut reader = io::BufReader::new(fp);
-        let rv = f(&mut reader) ;
-        return rv ;
+        match p.extension().map(|s| s.to_str()) {
+            Some(Some("gz")) => {
+                    let fp = File::open(p)?;
+                    let mut buf = io::BufReader::new(fp);
+                    let mut reader = GzDecoder::new(buf);
+                    let mut buf = io::BufReader::new(reader);
+                    let rv = f(&mut buf) ;
+                    return rv ;
+            },
+            _ => {
+                    let fp = File::open(p)?;
+                    let mut reader = io::BufReader::new(fp);
+                    let rv = f(&mut reader) ;
+                    return rv ;
+            }
+        }
     }
 
-    pub fn with_gzip_input_file<R, E, P>(p : &P,
-                                 f : &dyn Fn(&mut BufReader<GzDecoder<BufReader<File>>>) -> Result<R, E>,
+    pub fn with_output_file<R, E>(p : &Path,
+                                  f : &dyn Fn(&mut dyn io::Write) -> Result<R, E>,
     ) -> Result<R, E>
-    where E : From<io::Error>,
-          P: AsRef<Path>,
+    where E : From<io::Error>
     {
-        let fp = File::open(p)?;
-        let mut buf = io::BufReader::new(fp);
-        let mut reader = GzDecoder::new(buf);
-        let mut buf = io::BufReader::new(reader);
-        let rv = f(&mut buf) ;
-        return rv ;
+        match p.extension().map(|s| s.to_str()) {
+            Some(Some("gz")) => {
+                let fp = File::create(p)?;
+                let mut e = GzEncoder::new(fp, Compression::default());
+                let mut writer = io::BufWriter::new(e);
+                let rv = f(&mut writer) ;
+                return rv ;
+            },
+            _ => {
+                let fp = File::create(p)?;
+                let mut writer = io::BufWriter::new(fp);
+                let rv = f(&mut writer) ;
+                return rv ;
+            }
+        }
     }
 
-    pub fn with_output_file<R, E, P>(p : &P,
+    pub fn with_plain_output_file<R, E, P>(p : &P,
                                   f : &dyn Fn(&mut io::BufWriter<File>) -> Result<R, E>,
     ) -> Result<R, E>
     where E : From<io::Error>,
