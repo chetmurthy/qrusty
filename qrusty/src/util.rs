@@ -296,15 +296,18 @@ pub mod list {
 
 pub mod fileio {
     use flate2::bufread::GzDecoder;
+    use flate2::write::GzEncoder;
+    use flate2::Compression;
     use std::io;
     use std::io::BufReader;
     use std::fs::File;
     use std::path::Path;
 
-    pub fn with_file<R, E>(p : &Path,
-                           f : fn(&mut io::BufReader<File>) -> Result<R, E>,
+    pub fn with_input_file<R, E, P>(p : &P,
+                           f : &dyn Fn(&mut io::BufReader<File>) -> Result<R, E>,
     ) -> Result<R, E>
-    where E : From<io::Error>
+    where E : From<io::Error>,
+          P: AsRef<Path>,
     {
         let fp = File::open(p)?;
         let mut reader = io::BufReader::new(fp);
@@ -312,10 +315,11 @@ pub mod fileio {
         return rv ;
     }
 
-    pub fn with_gzip_file<R, E>(p : &Path,
-                                 f : fn(&mut BufReader<GzDecoder<BufReader<File>>>) -> Result<R, E>,
+    pub fn with_gzip_input_file<R, E, P>(p : &P,
+                                 f : &dyn Fn(&mut BufReader<GzDecoder<BufReader<File>>>) -> Result<R, E>,
     ) -> Result<R, E>
-    where E : From<io::Error>
+    where E : From<io::Error>,
+          P: AsRef<Path>,
     {
         let fp = File::open(p)?;
         let mut buf = io::BufReader::new(fp);
@@ -324,6 +328,33 @@ pub mod fileio {
         let rv = f(&mut buf) ;
         return rv ;
     }
+
+    pub fn with_output_file<R, E, P>(p : &P,
+                                  f : &dyn Fn(&mut io::BufWriter<File>) -> Result<R, E>,
+    ) -> Result<R, E>
+    where E : From<io::Error>,
+          P: AsRef<Path>,
+    {
+        let fp = File::create(p)?;
+        let mut writer = io::BufWriter::new(fp);
+        let rv = f(&mut writer) ;
+        return rv ;
+    }
+
+
+    pub fn with_gzip_output_file<R, E, P>(p : &P,
+                                  f : &dyn Fn(&mut io::BufWriter<GzEncoder<File>>) -> Result<R, E>,
+    ) -> Result<R, E>
+    where E : From<io::Error>,
+          P: AsRef<Path>,
+    {
+        let fp = File::create(p)?;
+        let mut e = GzEncoder::new(fp, Compression::default());
+        let mut writer = io::BufWriter::new(e);
+        let rv = f(&mut writer) ;
+        return rv ;
+    }
+
 }
 
 #[cfg(test)]

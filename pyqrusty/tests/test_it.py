@@ -132,6 +132,15 @@ def write_roundtrip(path, m):
     m2 = mmread(path)
     assert np.array_equal(csr_matrix(m).todense(), m2.todense())
 
+def write_roundtrip_gzip(path, m):
+    gzpath = str(path) + ".gz"
+    import copy
+    m = copy.copy(m)
+    m.matrixmarket_write(gzpath)
+    check_call(['gunzip', gzpath])
+    m2 = mmread(path)
+    assert np.array_equal(csr_matrix(m).todense(), m2.todense())
+
 def write_roundtrip2(path, spmat, symmetry=None):
     mmwrite(str(path), spmat, symmetry=symmetry)
     spmat2 = mmread(str(path))
@@ -155,14 +164,15 @@ def test_write(tmp_path):
     matI = pI.to_matrix()
     write_roundtrip(tmp_path / "I.mtx", matI)
     spmatI = csr_matrix(matI)
-    write_roundtrip2(tmp_path / "I2.mtx", spmatI, symmetry="symmetric")
-    write_roundtrip2(tmp_path / "I3.mtx", spmatI, symmetry="hermitian")
+    write_roundtrip2(tmp_path / "I2-gz.mtx", spmatI, symmetry="symmetric")
+    write_roundtrip2(tmp_path / "I3-gz.mtx", spmatI, symmetry="hermitian")
 
     pY = Pauli("Y")
     matY = pY.to_matrix()
     write_roundtrip(tmp_path / "Y.mtx", matY)
+    write_roundtrip_gzip(tmp_path / "Y-gz.mtx", matY)
     spmatY = csr_matrix(matY)
     write_roundtrip2(tmp_path / "Y2.mtx", spmatY, symmetry="skew-symmetric")
-    write_roundtrip2_gzip(tmp_path / "Y2.mtx", spmatY, symmetry="skew-symmetric")
+    write_roundtrip2_gzip(tmp_path / "Y2-gz.mtx", spmatY, symmetry="skew-symmetric")
     write_roundtrip2(tmp_path / "Y3.mtx", spmatY, symmetry="hermitian")
-    write_roundtrip2_gzip(tmp_path / "Y3.mtx", spmatY, symmetry="hermitian")
+    write_roundtrip2_gzip(tmp_path / "Y3-gz.mtx", spmatY, symmetry="hermitian")
