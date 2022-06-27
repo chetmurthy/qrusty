@@ -37,6 +37,7 @@ impl SpMat {
         }
     }
 
+    #[allow(dead_code)]
     fn unop(&self, name: &str, f : fn (&sprs::CsMatI<Complex64,  u64>) -> sprs::CsMatI<Complex64,  u64>) -> PyResult<SpMat> {
 
         match &*(self.it) {

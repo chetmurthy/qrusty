@@ -1,6 +1,5 @@
 use std::io ;
 use std::io::{ Read, Write } ;
-use std::mem::swap;
 use num_complex::Complex64;
 use cpu_endian::{Endian, working};
 use num_traits::Zero;
@@ -82,8 +81,6 @@ fn fread<R: Read, T>(
 ) -> Result<Vec<T>,  io::Error>
     where T : Sized + Zero + Clone + Swab
 {
-    let bytes = length * std::mem::size_of::<T>();
-
     // it is undefined behavior to call read_exact on un-initialized, https://doc.rust-lang.org/std/io/trait.Read.html#tymethod.read
     // see also https://github.com/MaikKlein/ash/issues/354#issue-781730580
     let mut buffer = vec![T::zero(); length];
@@ -107,7 +104,6 @@ fn fwrite<W: Write, T>(
 ) -> Result<(),  io::Error>
     where T : Sized + Zero + Clone + Swab,
 {
-    let bytes = v.len() * std::mem::size_of::<T>();
     unsafe {
         // transmute u64 to bytes.
         let slice = std::slice::from_raw_parts(
@@ -119,7 +115,7 @@ fn fwrite<W: Write, T>(
     Ok(())
 }
 
-fn write<W : io::Write>(w : &mut W, m : &sprs::CsMatI<Complex64,  u64>) -> Result<(), io::Error> {
+pub fn write<W : io::Write>(w : &mut W, m : &sprs::CsMatI<Complex64,  u64>) -> Result<(), io::Error> {
     write_endianmark(w)?;
     let (rows, cols) = m.shape() ;
     match m.storage() {
@@ -130,17 +126,17 @@ fn write<W : io::Write>(w : &mut W, m : &sprs::CsMatI<Complex64,  u64>) -> Resul
     write_u64(w, cols as u64)? ;
     let indptr_view = m.indptr() ;
     let indptr = indptr_view.raw_storage() ;
-    write_u64(w, indptr.len() as u64) ;
+    write_u64(w, indptr.len() as u64)? ;
     fwrite(w, indptr)? ;
     let indices = m.indices() ;
-    write_u64(w, indices.len() as u64) ;
+    write_u64(w, indices.len() as u64)? ;
     fwrite(w, indices)? ;
     let data = m.data() ;
-    write_u64(w, data.len() as u64) ;
+    write_u64(w, data.len() as u64)? ;
     fwrite(w, data)
 }
 
-fn read<R : io::Read>(r : &mut R) -> Result<sprs::CsMatI<Complex64,  u64>, io::Error> {
+pub fn read<R : io::Read>(r : &mut R) -> Result<sprs::CsMatI<Complex64,  u64>, io::Error> {
     let read_mark = read_endianmark(r)? ;
     let need_swab = mark() != read_mark ;
     let n = read_u64(r, need_swab)?;

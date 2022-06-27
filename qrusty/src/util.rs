@@ -299,7 +299,6 @@ pub mod fileio {
     use flate2::write::GzEncoder;
     use flate2::Compression;
     use std::io;
-    use std::io::BufReader;
     use std::fs::File;
     use std::path::Path;
 
@@ -311,8 +310,8 @@ pub mod fileio {
         match p.extension().map(|s| s.to_str()) {
             Some(Some("gz")) => {
                     let fp = File::open(p)?;
-                    let mut buf = io::BufReader::new(fp);
-                    let mut reader = GzDecoder::new(buf);
+                    let buf = io::BufReader::new(fp);
+                    let reader = GzDecoder::new(buf);
                     let mut buf = io::BufReader::new(reader);
                     let rv = f(&mut buf) ;
                     return rv ;
@@ -334,7 +333,7 @@ pub mod fileio {
         match p.extension().map(|s| s.to_str()) {
             Some(Some("gz")) => {
                 let fp = File::create(p)?;
-                let mut e = GzEncoder::new(fp, Compression::default());
+                let e = GzEncoder::new(fp, Compression::default());
                 let mut writer = io::BufWriter::new(e);
                 let rv = f(&mut writer) ;
                 return rv ;
