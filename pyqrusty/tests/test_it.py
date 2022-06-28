@@ -1,10 +1,19 @@
 import pytest
 
+import time
 import numpy as np
 import scipy.sparse as sps
 
 from pyqrusty import *
-from fixtures import *
+from H_fixtures import *
+
+def timer(msg, f):
+    t0 = time.time()
+    print("START %s" % (msg,))
+    rv = f()
+    t1 = time.time()
+    print('END ELAPSED %s: %.03fms' % (msg, 1000 * (t1-t0)))
+    return rv
 
 def test_paulis():
     p = Pauli('IXYZ')
@@ -166,3 +175,4 @@ def test_write(tmp_path):
     write_roundtrip2_gzip(tmp_path / "Y2-gz.mtx", spmatY, symmetry="skew-symmetric")
     write_roundtrip2(tmp_path / "Y3.mtx", spmatY, symmetry="hermitian")
     write_roundtrip2_gzip(tmp_path / "Y3-gz.mtx", spmatY, symmetry="hermitian")
+

@@ -251,7 +251,7 @@ impl Pauli {
     #[new]
     pub fn new(label: String) -> PyResult<Pauli> {
         let it = qrusty::Pauli::new(&label) ? ;
-        Ok(Pauli { it })
+        Ok(Pauli::from(it))
     }
 
     pub fn num_qubits(&self) -> usize {
@@ -297,6 +297,17 @@ impl SparsePauliOp {
         let coeffs : &[Complex64] = &coeffs[..] ;
         let it = qrusty::SparsePauliOp::new(paulis, coeffs) ? ;
         Ok(SparsePauliOp { it })
+    }
+
+    pub fn __len__(&self) -> PyResult<usize> {
+        Ok(self.it.members().len())
+    }
+
+    fn __getitem__(&self, idx: isize) -> PyResult<(Pauli, Complex64)> {
+        (0 <= idx && idx < self.it.members().len() as isize).then(|| ())
+            .ok_or(PyException::new_err(format!("__getitem__ called on invalid index {}", idx))) ? ;
+        let m = &self.it.members()[idx as usize] ;
+        Ok((Pauli::from(m.0.clone()), m.1))
     }
 
     pub fn num_qubits(&self) -> usize {
