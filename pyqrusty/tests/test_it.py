@@ -4,8 +4,7 @@ import numpy as np
 import scipy.sparse as sps
 
 import pyqrusty as pq
-#from fixtures import *
-from fix2 import *
+from fixtures import *
 
 def test_paulis():
     p = pq.Pauli('IXYZ')
