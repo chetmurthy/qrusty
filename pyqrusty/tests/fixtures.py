@@ -1,10 +1,13 @@
 import numpy as np
-from qiskit.quantum_info import *
-from qiskit.opflow import *
+from pyqrusty import *
+
+def build_spop(labels, coeffs):
+    paulis = [Pauli(l) for l in labels]
+    return SparsePauliOp(paulis, coeffs)
 
 # ================================================================
 # number of terms in the fermionic Hamiltonian: 72
-H2 = SparsePauliOp(
+H2 = build_spop(
         [
             "IIII",
             "IIIZ",
@@ -67,7 +70,7 @@ H2 = SparsePauliOp(
 
 # ================================================================
 # number of terms in the fermionic Hamiltonian: 1056
-H4 = SparsePauliOp(
+H4 = build_spop(
         [
             "IIIIIIII",
             "IIIIIIIZ",
@@ -797,7 +800,7 @@ H4 = SparsePauliOp(
     )
 # ================================================================
 # number of terms in the fermionic Hamiltonian: 5256
-H6 = SparsePauliOp(
+H6 = build_spop(
         [
             "IIIIIIIIIIII",
             "IIIIIIIIIIIZ",
@@ -4443,7 +4446,7 @@ H6 = SparsePauliOp(
     )
 # ================================================================
 # number of terms in the fermionic Hamiltonian: 16512
-H8 = SparsePauliOp(
+H8 = build_spop(
         [
             "IIIIIIIIIIIIIIII",
             "IIIIIIIIIIIIIIIZ",
@@ -16037,7 +16040,7 @@ H8 = SparsePauliOp(
     )
 # ================================================================
 # number of terms in the fermionic Hamiltonian: 40200
-H10 = SparsePauliOp(
+H10 = build_spop(
         [
             "IIIIIIIIIIIIIIIIIIII",
             "IIIIIIIIIIIIIIIIIIIZ",
@@ -44547,7 +44550,7 @@ H10 = SparsePauliOp(
     )
 # ================================================================
 # number of terms in the fermionic Hamiltonian: 58806
-H11 = SparsePauliOp(
+H11 = build_spop(
         [
             "IIIIIIIIIIIIIIIIIIIIII",
             "IIIIIIIIIIIIIIIIIIIIIZ",
@@ -86390,7 +86393,7 @@ H11 = SparsePauliOp(
         ],
     )
 
-H12 = SparsePauliOp(
+H12 = build_spop(
         [
             "IIIIIIIIIIIIIIIIIIIYZXXY",
             "IIIIIIIIIIIIIIIIIIIYZYYY",
