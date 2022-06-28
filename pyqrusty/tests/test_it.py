@@ -176,3 +176,9 @@ def test_write(tmp_path):
     write_roundtrip2(tmp_path / "Y3.mtx", spmatY, symmetry="hermitian")
     write_roundtrip2_gzip(tmp_path / "Y3-gz.mtx", spmatY, symmetry="hermitian")
 
+def test_slice():
+    p = H2[3]
+    assert repr(p) == "(Pauli('IIXX'), (-0.00170526+0j))"
+    s = H2[3:8:2]
+    print(s)
+    assert repr(s) == "[(Pauli('IIXX'), (-0.00170526+0j)), (Pauli('IZII'), (0.18388659+0j)), (Pauli('XXII'), (-0.00170526+0j))]"

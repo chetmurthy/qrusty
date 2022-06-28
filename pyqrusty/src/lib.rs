@@ -8,6 +8,7 @@ use num_complex::Complex64;
 use pyo3::wrap_pyfunction;
 use pyo3::Python;
 use pyo3::PyErr ;
+use pyo3::types::{ PySlice } ;
 use pyo3::exceptions::PyOSError;
 use pyo3::exceptions::PyException;
 
@@ -288,7 +289,29 @@ impl From<qrusty::SparsePauliOp> for SparsePauliOp {
     }
 }
 
- #[pymethods]
+#[derive(FromPyObject)]
+enum SliceOrInt<'a> {
+    Slice(&'a PySlice),
+    Int(isize),
+}
+
+
+enum SliceResult<T> {
+    It(T),
+    Slice(Vec<T>)
+}
+impl<T : IntoPy<PyObject>> IntoPy<PyObject> for SliceResult<T> {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        match self {
+            SliceResult::It(it) => it.into_py(py),
+            SliceResult::Slice(v) => {
+                v.into_py(py)
+            }
+        }
+    }
+}
+
+#[pymethods]
 impl SparsePauliOp {
 
     #[new]
@@ -303,11 +326,27 @@ impl SparsePauliOp {
         Ok(self.it.members().len())
     }
 
-    fn __getitem__(&self, idx: isize) -> PyResult<(Pauli, Complex64)> {
-        (0 <= idx && idx < self.it.members().len() as isize).then(|| ())
-            .ok_or(PyException::new_err(format!("__getitem__ called on invalid index {}", idx))) ? ;
-        let m = &self.it.members()[idx as usize] ;
-        Ok((Pauli::from(m.0.clone()), m.1))
+    fn __getitem__(&self, idx: SliceOrInt) -> PyResult<SliceResult<(Pauli, Complex64)>> {
+        match idx {
+            SliceOrInt::Slice(slice) => {
+                let psi = slice.indices(self.it.members().len() as i64)? ;
+                let (start, stop, step) = (psi.start, psi.stop, psi.step) ;
+                let m : Vec<(Pauli, Complex64)> =
+                    self.it.members()[start as usize..stop as usize].iter()
+                    .step_by(step as usize)
+                    .map(|p| (Pauli::from(p.0.clone()), p.1))
+                    .collect() ;
+                let m = SliceResult::Slice(m) ;
+                Ok(m)
+            }
+            SliceOrInt::Int(idx) => {
+                (0 <= idx && idx < self.it.members().len() as isize).then(|| ())
+                    .ok_or(PyException::new_err(format!("__getitem__ called on invalid index {}", idx))) ? ;
+                let m = &self.it.members()[idx as usize] ;
+                let m = SliceResult::It((Pauli::from(m.0.clone()), m.1)) ;
+                Ok(m)
+            }
+        }
     }
 
     pub fn num_qubits(&self) -> usize {
