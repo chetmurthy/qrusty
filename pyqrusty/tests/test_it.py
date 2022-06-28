@@ -4,21 +4,11 @@ import numpy as np
 import scipy.sparse as sps
 
 from pyqrusty import *
-
-# content of test_sample.py
-def inc(x):
-    return x + 1
-
-
-def test_answer():
-    assert inc(3) == 4
-
-def test_sum():
-    assert py_sum(3,4) == 7
+#from fixtures import *
 
 def test_paulis():
     p = Pauli('IXYZ')
-    assert p.num_qubits() == 4
+    assert (p.num_qubits() == 4)
     assert p.label() == 'IXYZ'
     assert repr(p) == "Pauli('IXYZ')"
 
