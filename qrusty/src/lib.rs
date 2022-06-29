@@ -149,6 +149,23 @@ impl Pauli {
         Ok(Pauli{ base_phase, paulis })
     }
 
+    pub fn x_indices(&self) -> u64 {
+        let x_indices : u64 =
+            self.xs().iter().enumerate()
+            .filter(|(_,x)| **x)
+            .map(|(i,_)| 1<<i)
+            .sum() ;
+        x_indices
+    }
+    pub fn z_indices(&self) -> u64 {
+        let z_indices : u64 =
+            self.zs().iter().enumerate()
+            .filter(|(_,z)| **z)
+            .map(|(i,_)| 1<<i)
+            .sum() ;
+        z_indices
+    }
+    
     pub fn base_phase(&self) -> usize { self.base_phase }
     pub fn phase(&self) -> usize {
         (self.base_phase() + self.paulis.iter().fold(0, |acc, p| acc + match p { Y => 1, _ => 0 })) % 4
@@ -220,9 +237,16 @@ impl Pauli {
             )
         }
     }
+    pub fn to_matrix_rowwise(&self) -> sprs::CsMatI<Complex64, u64> {
+        let v = vec![(self.clone(), Complex64::new(1.0, 0.0))] ;
+        let members = &v[..] ;
+        let trimat = accel::rowwise_make_data(&members) ;
+        trimat.to_csr()
+    }
+
 }
-type PauliSummand = (Pauli, Complex64) ;
-type PauliSum = Vec<PauliSummand> ;
+pub type PauliSummand = (Pauli, Complex64) ;
+pub type PauliSum = Vec<PauliSummand> ;
 
 impl<'a> Index<isize> for SparsePauliOp {
     type Output = PauliSummand ;
@@ -413,7 +437,11 @@ impl SparsePauliOp {
                 .unwrap()
         }
     }
-
+    pub fn to_matrix_rowwise(&self) -> sprs::CsMatI<Complex64, u64> {
+        let members = &self.members[..] ;
+        let trimat = accel::rowwise_make_data(&members) ;
+        trimat.to_csr()
+    }
 }
 
 impl_op_ex!(+ |a: &SparsePauliOp, b: &SparsePauliOp| -> SparsePauliOp {
@@ -427,7 +455,9 @@ impl_op_ex!(+ |a: &SparsePauliOp, b: &SparsePauliOp| -> SparsePauliOp {
 mod tests {
     use num_complex::Complex64;
     use ndarray::array ;
+    use ndarray::Array2;
     use sprs::*;
+    use ::approx::{ abs_diff_eq, assert_abs_diff_eq, abs_diff_ne, assert_abs_diff_ne, } ;
 
     use crate::* ;
 
@@ -551,12 +581,14 @@ phase=2
         let p = p.unwrap() ;
         assert_eq!(p.to_matrix().view().to_dense(),
                    kronecker_product(I.to_matrix().view(), X.to_matrix().view()).to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
 
         let p = Pauli::new(&"XI".to_string()) ;
         assert!(p.is_ok()) ;
         let p = p.unwrap() ;
         assert_eq!(p.to_matrix().view().to_dense(),
                    kronecker_product(X.to_matrix().view(), I.to_matrix().view()).to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
 
     }
 
@@ -566,16 +598,19 @@ phase=2
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
 
         let p = Pauli::new(&"Y".to_string()).unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
 
         let p = Pauli::new(&"YY".to_string()).unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
     }
 
     #[test]
@@ -614,6 +649,56 @@ phase=2
         assert_eq!(spop.to_matrix_rayon().to_dense(),
                    array![[one, two],
                           [two, one]]) ;
+        assert_eq!(spop.to_matrix_rowwise().to_dense(),
+                   spop.to_matrix().to_dense(),
+        ) ;
     }
 
+    #[test]
+    fn h2() {
+        let tc = &crate::fixtures::H2 ;
+	let ll = &tc.labels[..] ;
+	let cl = &tc.coeffs[..] ;
+	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
+        assert_abs_diff_eq!(spop.to_matrix_rayon(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+    }
+
+    #[test]
+    fn h4() {
+        let tc = &crate::fixtures::H4 ;
+	let ll = &tc.labels[..] ;
+	let cl = &tc.coeffs[..] ;
+	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
+        assert_abs_diff_eq!(spop.to_matrix_rayon(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+    }
+
+    #[test]
+    fn h6() {
+        let tc = &crate::fixtures::H6 ;
+	let ll = &tc.labels[..] ;
+	let cl = &tc.coeffs[..] ;
+	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
+        assert_abs_diff_eq!(spop.to_matrix_rayon(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+    }
+
+    #[test]
+    fn h8() {
+        let tc = &crate::fixtures::H8 ;
+	let ll = &tc.labels[..] ;
+	let cl = &tc.coeffs[..] ;
+	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
+        assert_abs_diff_eq!(spop.to_matrix_rayon(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+    }
 }

@@ -10,14 +10,16 @@ num-traits = "0.2.15"
 num-complex = ">= 0.4, < 0.4.2"
 clap = { version = "3.0", features = ["derive"] }
 flate2 = "1.0.24"
-sprs = { path = "../../sprs/sprs" }
+sprs = { path = "../../sprs/sprs", features = ["approx"] }
 regex = "1"
 lazy_static = "1.4.0"
-ndarray = "0.15.3"
+ndarray = { version = "0.15.3", features = ["approx-0_5"] }
 rayon = "1.5"
 impl_ops = "0.1.1"
 pyo3 = { version = "0.16.5", features = ["extension-module"] }
 cpu-endian = "0.1.1"
+log = "0.4.17"
+approx = { version = "0.5.1", features = ["num-complex"] }
 
 [dev-dependencies]
 criterion = "0.3"

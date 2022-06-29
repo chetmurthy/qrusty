@@ -1,6 +1,8 @@
 use num_complex::Complex64;
 use std::time::Instant;
 
+use sprs::{TriMatI};
+
 pub fn rust_make_data(z: &Vec<bool>,
                       x: &Vec<bool>,
                       coeff: Complex64,
@@ -22,12 +24,10 @@ pub fn rust_make_data(z: &Vec<bool>,
 	if debug { println!("1: z={:?} x={:?} num_qubits={} mut_phase={}", z, x, num_qubits, mut_phase) ; }
 
 	if group_phase {
-	    let mut dotprod = 0 ;
-	    for i in 0..num_qubits {
-		if x[i] && z[i] {
-		    dotprod += 1
-		}
-	    }
+	    let dotprod : i64 = x.iter()
+                .zip(z.iter())
+                .filter(|(x,z)| **x && **z)
+                .count() as i64 ;
 	    if debug { println!("2: dotprod={}", dotprod) ; }
 	    mut_phase += dotprod ;
 	    mut_phase = mut_phase % 4 ;
@@ -36,24 +36,24 @@ pub fn rust_make_data(z: &Vec<bool>,
 	if debug { println!("2: mut_phase={}", mut_phase) ; }
 
 	let dim =  1 << num_qubits ;
-	let mut twos_array = Vec::<u64>::new() ;
-	for i in 0..num_qubits {
-	    twos_array.push(1 << i) ;
-	}
+        let twos_array : Vec<u64> =
+            (0..num_qubits)
+            .map(|i| 1<<i)
+            .collect() ;
+
 	if debug { println!("3: twos_array={:?}", twos_array) ; }
 
-	let mut x_indices = 0 ;
-	for i in 0..num_qubits {
-	    if x[i] {
-		x_indices += twos_array[i] ;
-	    }
-	}
-	let mut z_indices = 0 ;
-	for i in 0..num_qubits {
-	    if z[i] {
-		z_indices += twos_array[i] ;
-	    }
-	}
+        let x_indices : u64 =
+            x.iter().enumerate()
+            .filter(|(_,x)| **x)
+            .map(|(i,_)| twos_array[i])
+            .sum() ;
+
+        let z_indices : u64 =
+            z.iter().enumerate()
+            .filter(|(_,z)| **z)
+            .map(|(i,_)| twos_array[i])
+            .sum() ;
 
 	if debug { println!("4: x_indices={} z_indices={}", x_indices, z_indices) ; }
 
@@ -62,17 +62,15 @@ pub fn rust_make_data(z: &Vec<bool>,
 
 
         let vecsize = if for_ffi { dim+1 } else { dim } ;
-	let mut indptr = vec![0 as u64;vecsize] ;
-	for i in 0..vecsize {
-	    indptr[i] = i as u64;
-	}
+        let indptr : Vec<u64> = (0..vecsize).collect() ;
 
         if timings { println!("BEFORE indices: {} ms", now.elapsed().as_millis()); }
-	let mut indices = vec![0 as u64;indptr.len()] ;
 
-	for i in 0..indptr.len() {
-	    indices[i] = indptr[i] ^ x_indices ;
-	}
+        let indices =
+            indptr.iter()
+            .map(|ind| ind ^ x_indices)
+            .collect() ;
+
 	let coeff = match phase % 4 {
 	    0 => Complex64::new(1.0, 0.0) * coeff,
 	    1 => Complex64::new(0.0, -1.0) * coeff,
@@ -85,16 +83,19 @@ pub fn rust_make_data(z: &Vec<bool>,
 
         if timings { println!("BEFORE data: {} ms", now.elapsed().as_millis()); }
 
-	let mut data = Vec::new() ;
-	for indp in indptr.iter() {
-	    if debug { println!("indp[] = {}", indp) ; }
-	    if (indp & z_indices).count_ones() % 2 == 1 {
-		data.push(-coeff) ;
-	    }
-	    else {
-		data.push(coeff) ;
-	    }
-	}
+        let data =
+            indptr.iter()
+            .map(|ind| {
+	        if debug { println!("indp[] = {}", ind) ; }
+	        if (ind & z_indices).count_ones() % 2 == 1 {
+		    -coeff
+	        }
+	        else {
+		    coeff
+	        }
+            })
+            .collect() ;
+
         if timings { println!("AFTER data: {} ms", now.elapsed().as_millis()); }
 
 	Ok((
@@ -103,4 +104,44 @@ pub fn rust_make_data(z: &Vec<bool>,
             indptr,
 	))
     }
+}
+
+pub fn rowwise_make_data(members : &[crate::PauliSummand],
+) -> TriMatI<Complex64,u64> {
+
+    let num_qubits = members[0].0.num_qubits() ;
+    let dim =  1 << num_qubits ;
+
+    let params : Vec<(u64, u64, Complex64)> =
+        members.iter()
+        .map(|(p, coeff)| {
+            let phase = p.phase() ;
+            let coeff = *coeff ;
+	    let coeff = match phase % 4 {
+	        0 => Complex64::new(1.0, 0.0) * coeff,
+	        1 => Complex64::new(0.0, -1.0) * coeff,
+	        2 => Complex64::new(-1.0, 0.0) * coeff,
+	        3 => Complex64::new(0.0, 1.0) * coeff,
+	        _ => coeff // really should be assert!(false)
+	    } ;
+            (p.z_indices(), p.x_indices(), coeff)
+        })
+        .collect() ;
+
+    let mut trimat : TriMatI<Complex64, u64> = TriMatI::new((dim, dim)) ;
+    for rowind in 0..(dim as u64) {
+        params.iter()
+            .for_each(|(z_indices, x_indices, coeff)| {
+                let colind = rowind ^ x_indices ;
+                let coeff = *coeff ;
+                let data = if (rowind & z_indices).count_ones() % 2 == 1 {
+		    -coeff
+	        }
+	        else {
+		    coeff
+	        } ;
+                trimat.add_triplet(rowind as usize, colind as usize, data)
+            }) ;
+    }
+    trimat
 }

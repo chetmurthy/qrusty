@@ -21,7 +21,7 @@ pub fn sparse_pauli_op(tc : &fixtures::TestCase, n : usize) -> SparsePauliOp {
 
 fn main() {
     let spop = sparse_pauli_op(&fixtures::H8, 100000) ;
-    let m = spop.to_matrix_accel() ;
+    let _m = spop.to_matrix_accel() ;
 }
 
 fn main2() {
