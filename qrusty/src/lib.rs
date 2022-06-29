@@ -689,16 +689,4 @@ phase=2
                      epsilon = 1e-7
         ) ;
     }
-
-    #[test]
-    fn h8() {
-        let tc = &crate::fixtures::H8 ;
-	let ll = &tc.labels[..] ;
-	let cl = &tc.coeffs[..] ;
-	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
-        assert_abs_diff_eq!(spop.to_matrix_rayon(),
-                     spop.to_matrix(),
-                     epsilon = 1e-7
-        ) ;
-    }
 }
