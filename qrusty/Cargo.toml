@@ -32,6 +32,14 @@ name = "big_bench"
 harness = false
 html_reports = true
 
+[[bin]]
+name = "main"
+src = "src/bin/main.rs"
+
+[[bin]]
+name = "test1"
+src = "src/bin/test1.rs"
+
 [profile.dev]
 opt-level = 3
 
