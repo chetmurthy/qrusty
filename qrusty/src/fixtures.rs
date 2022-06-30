@@ -8,6 +8,7 @@ pub enum TestOperation {
     ToMatrix,
     ToMatrixBinary,
     ToMatrixAccel,
+    ToMatrixRowwiseUnsafe,
     ToMatrixReduce,
     ToMatrixRayon,
     ToMatrixRayonChunked(usize),
@@ -20,6 +21,7 @@ impl TestOperation {
             ToMatrix => spop.to_matrix(),
             ToMatrixBinary => spop.to_matrix_binary(),
             ToMatrixAccel => spop.to_matrix_accel(),
+            ToMatrixRowwiseUnsafe => spop.to_matrix_rowwise_unsafe(),
             ToMatrixReduce => spop.to_matrix_reduce(),
             ToMatrixRayon => spop.to_matrix_rayon(),
             ToMatrixRayonChunked(step) => spop.to_matrix_rayon_chunked(*step),
@@ -65,6 +67,8 @@ lazy_static! {
             ToMatrix,
             ToMatrixBinary,
             ToMatrixAccel,
+            ToMatrixRowwiseUnsafe,
+            ToMatrix,
             ToMatrixReduce,
             ToMatrixRayon,
         ] ;
@@ -79,6 +83,7 @@ lazy_static! {
             ToMatrix,
             ToMatrixBinary,
             ToMatrixAccel,
+            ToMatrixRowwiseUnsafe,
             ToMatrixReduce,
             ToMatrixRayon,
         ] ;
@@ -93,6 +98,7 @@ lazy_static! {
             ToMatrix,
             ToMatrixBinary,
             ToMatrixAccel,
+            ToMatrixRowwiseUnsafe,
             ToMatrixReduce,
             ToMatrixRayon,
         ] ;
@@ -105,6 +111,7 @@ lazy_static! {
 	let coeffs = util::complex64_list_from_string_list(&coeffs) ;
         let ops = vec![
             ToMatrixAccel,
+            ToMatrixRowwiseUnsafe,
             ToMatrixRayon,
             ToMatrixRayonChunked(250),
             ToMatrixRayonChunked(500),
@@ -220,6 +227,7 @@ lazy_static! {
 	let coeffs = util::complex64_list_from_string_list(&coeffs) ;
         let ops = vec![
             ToMatrixAccel,
+            ToMatrixRowwiseUnsafe,
         ] ;
 	TestCase { name : "H10_First100", labels, coeffs, ops }
     } ;
