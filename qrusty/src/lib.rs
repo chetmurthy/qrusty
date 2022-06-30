@@ -234,7 +234,30 @@ impl Pauli {
         trimat.to_csr()
     }
 
+    pub fn to_unsafe_vectors_rowwise(&self) -> accel::UnsafeVectors {
+        let v = vec![(self.clone(), Complex64::new(1.0, 0.0))] ;
+        let members = &v[..] ;
+        let usv = accel::rowwise::make_unsafe_vectors(&members) ;
+        usv
+    }
+
+    pub fn to_matrix_rowwise_unsafe(&self) -> sprs::CsMatI<Complex64, u64> {
+        let usv = self.to_unsafe_vectors_rowwise() ;
+        let dim = 1 << self.num_qubits() ;
+
+        unsafe {
+            CsMatI::<Complex64, u64, u64>::new_unchecked(
+                CompressedStorage::CSR,
+                (dim, dim),
+                usv.indptr,
+                usv.indices,
+                usv.data,
+            )
+        }
+    }
 }
+
+
 pub type PauliSummand = (Pauli, Complex64) ;
 pub type PauliSum = Vec<PauliSummand> ;
 
@@ -432,6 +455,28 @@ impl SparsePauliOp {
         let trimat = accel::rowwise::make_trimat(&members) ;
         trimat.to_csr()
     }
+
+    pub fn to_unsafe_vectors_rowwise(&self) -> accel::UnsafeVectors {
+        let members = &self.members[..] ;
+        let usv = accel::rowwise::make_unsafe_vectors(&members) ;
+        usv
+    }
+
+    pub fn to_matrix_rowwise_unsafe(&self) -> sprs::CsMatI<Complex64, u64> {
+        let usv = self.to_unsafe_vectors_rowwise() ;
+        let dim = 1 << self.num_qubits() ;
+
+        unsafe {
+            CsMatI::<Complex64, u64, u64>::new_unchecked(
+                CompressedStorage::CSR,
+                (dim, dim),
+                usv.indptr,
+                usv.indices,
+                usv.data,
+            )
+        }
+    }
+
 }
 
 impl_op_ex!(+ |a: &SparsePauliOp, b: &SparsePauliOp| -> SparsePauliOp {
@@ -571,14 +616,18 @@ phase=2
         let p = p.unwrap() ;
         assert_eq!(p.to_matrix().view().to_dense(),
                    kronecker_product(I.to_matrix().view(), X.to_matrix().view()).to_dense()) ;
-        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix()) ;
+        assert_eq!(p.to_unsafe_vectors(), p.to_unsafe_vectors_rowwise()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix_rowwise_unsafe()) ;
 
         let p = Pauli::new(&"XI".to_string()) ;
         assert!(p.is_ok()) ;
         let p = p.unwrap() ;
         assert_eq!(p.to_matrix().view().to_dense(),
                    kronecker_product(X.to_matrix().view(), I.to_matrix().view()).to_dense()) ;
-        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix()) ;
+        assert_eq!(p.to_unsafe_vectors(), p.to_unsafe_vectors_rowwise()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix_rowwise_unsafe()) ;
 
     }
 
@@ -588,19 +637,25 @@ phase=2
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
-        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix()) ;
+        assert_eq!(p.to_unsafe_vectors(), p.to_unsafe_vectors_rowwise()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix_rowwise_unsafe()) ;
 
         let p = Pauli::new(&"Y".to_string()).unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
-        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix()) ;
+        assert_eq!(p.to_unsafe_vectors(), p.to_unsafe_vectors_rowwise()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix_rowwise_unsafe()) ;
 
         let p = Pauli::new(&"YY".to_string()).unwrap() ;
 
         assert_eq!(p.to_matrix().view().to_dense(),
                    p.to_matrix_accel().view().to_dense()) ;
-        assert_eq!(p.to_matrix_rowwise().to_dense(), p.to_matrix().to_dense()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix()) ;
+        assert_eq!(p.to_unsafe_vectors(), p.to_unsafe_vectors_rowwise()) ;
+        assert_eq!(p.to_matrix_rowwise(), p.to_matrix_rowwise_unsafe()) ;
     }
 
     #[test]
@@ -639,8 +694,37 @@ phase=2
         assert_eq!(spop.to_matrix_rayon().to_dense(),
                    array![[one, two],
                           [two, one]]) ;
-        assert_eq!(spop.to_matrix_rowwise().to_dense(),
-                   spop.to_matrix().to_dense(),
+        assert_eq!(spop.to_matrix_rowwise(),
+                   spop.to_matrix(),
+        ) ;
+        assert_eq!(spop.to_matrix_rowwise(),
+                   spop.to_matrix_rowwise_unsafe(),
+        ) ;
+    }
+
+    #[test]
+    fn h2_debug() {
+        let labels = vec![
+	    "YYYY", "XXYY"
+	] ;
+	let coeffs = vec![
+	    "1+0j", "1+0j"
+	] ;
+	let coeffs = util::complex64_list_from_string_list(&coeffs) ;
+	let spop = SparsePauliOp::from_labels(&labels[..], &coeffs[..]).unwrap() ;
+        assert_abs_diff_eq!(spop.to_matrix_rayon(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+        let usv = spop.to_unsafe_vectors_rowwise() ;
+        println!("indptr: {:?}\nindices: {:?}\ndata: {:?}", usv.indptr, usv.indices, usv.data) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix_rowwise_unsafe(),
+                     epsilon = 1e-7
         ) ;
     }
 
@@ -652,6 +736,14 @@ phase=2
 	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
         assert_abs_diff_eq!(spop.to_matrix_rayon(),
                      spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix_rowwise_unsafe(),
                      epsilon = 1e-7
         ) ;
     }
@@ -666,6 +758,14 @@ phase=2
                      spop.to_matrix(),
                      epsilon = 1e-7
         ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix_rowwise_unsafe(),
+                     epsilon = 1e-7
+        ) ;
     }
 
     #[test]
@@ -676,6 +776,14 @@ phase=2
 	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
         assert_abs_diff_eq!(spop.to_matrix_rayon(),
                      spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix(),
+                     epsilon = 1e-7
+        ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix_rowwise_unsafe(),
                      epsilon = 1e-7
         ) ;
     }

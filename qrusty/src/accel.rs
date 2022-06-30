@@ -3,6 +3,7 @@ use std::time::Instant;
 
 use sprs::{TriMatI};
 
+#[derive(Debug, PartialEq)]
 pub struct UnsafeVectors {
     pub data : Vec<Complex64>,
     pub indices: Vec<u64>,
@@ -113,7 +114,9 @@ pub fn make_unsafe_vectors(z: &Vec<bool>,
 
 pub mod rowwise {
     use num_complex::Complex64;
+    use num_traits::Zero;
     use sprs::{TriMatI};
+    use super::UnsafeVectors ;
 
     pub fn make_params(members : &[crate::PauliSummand],
     ) -> Vec<(u64, u64, Complex64)> {
@@ -134,9 +137,9 @@ pub mod rowwise {
     }
 
     pub fn make_row(params : &Vec<(u64, u64, Complex64)>, rowind : u64)
-        -> Vec<(usize, Complex64)>
+        -> Vec<(u64, Complex64)>
     {
-        params.iter()
+        let mut v : Vec<(u64, Complex64)> = params.iter()
             .map(|(z_indices, x_indices, coeff)| {
                 let colind = rowind ^ x_indices ;
                 let coeff = *coeff ;
@@ -146,9 +149,28 @@ pub mod rowwise {
 	        else {
 		    coeff
 	        } ;
-                (colind as usize, data)
+                (colind as u64, data)
             })
-            .collect()
+            .collect() ;
+        v.sort_by(|a, b| a.0.cmp(&b.0)) ;
+        let mut w = Vec::new() ;
+        let (first, col, sum) = v.iter()
+            .fold((true, 0, Complex64::zero()),
+                  |(first, prevcol,runningsum),(colind,v)| {
+                      if first {
+                          (false, *colind, *v)
+                      }
+                      else if prevcol == *colind {
+                          let runningsum = runningsum + *v ;
+                          (false, prevcol, runningsum)
+                      } else {
+                          w.push((prevcol, runningsum)) ;
+                          (false, *colind, *v)
+                      }
+                  }) ;
+        assert!(!first) ;
+        w.push((col as u64, sum)) ;
+        w
     }
 
     pub fn make_trimat(members : &[crate::PauliSummand],
@@ -168,5 +190,39 @@ pub mod rowwise {
                 }) ;
         }
         trimat
+    }
+
+    pub fn make_unsafe_vectors(members : &[crate::PauliSummand],
+    ) -> UnsafeVectors {
+
+        let num_qubits = members[0].0.num_qubits() ;
+        let dim =  1 << num_qubits ;
+
+        let params = make_params(members) ;
+
+        let mut indptr = Vec::with_capacity(dim+1) ;
+        let mut accum_pairs = Vec::with_capacity(dim) ;
+        let mut nnz : u64 = 0 ;
+        for rowind in 0..(dim as u64) {
+            let pairs = make_row(&params, rowind) ;
+            indptr.push(nnz) ;
+            nnz += pairs.len() as u64;
+            accum_pairs.push(pairs) ;
+        }
+        indptr.push(nnz) ;
+        let mut indices = Vec::with_capacity(nnz as usize) ;
+        let mut data = Vec::with_capacity(nnz as usize) ;
+        accum_pairs.iter()
+            .for_each(|v|
+                      v.iter()
+                      .for_each(|(colind, v)| {
+                          indices.push(*colind) ;
+                          data.push(*v) ;
+                      })) ;
+        UnsafeVectors {
+            data,
+            indices,
+            indptr,
+	}
     }
 }
