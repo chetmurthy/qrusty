@@ -73,7 +73,7 @@ pub fn make_unsafe_vectors(z: &Vec<bool>,
         if timings { println!("BEFORE indices: {} ms", now.elapsed().as_millis()); }
 
         let indices =
-            indptr.iter()
+            (&indptr[..dim as usize]).iter()
             .map(|ind| ind ^ x_indices)
             .collect() ;
 
@@ -90,7 +90,7 @@ pub fn make_unsafe_vectors(z: &Vec<bool>,
         if timings { println!("BEFORE data: {} ms", now.elapsed().as_millis()); }
 
         let data =
-            indptr.iter()
+            (&indptr[..dim as usize]).iter()
             .map(|ind| {
 	        if debug { println!("indp[] = {}", ind) ; }
 	        if (ind & z_indices).count_ones() % 2 == 1 {
@@ -152,7 +152,7 @@ pub mod rowwise {
             .collect()
     }
 
-    pub fn make_data(members : &[crate::PauliSummand],
+    pub fn make_trimat(members : &[crate::PauliSummand],
     ) -> TriMatI<Complex64,u64> {
 
         let num_qubits = members[0].0.num_qubits() ;

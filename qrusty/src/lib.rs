@@ -240,7 +240,7 @@ impl Pauli {
     pub fn to_matrix_rowwise(&self) -> sprs::CsMatI<Complex64, u64> {
         let v = vec![(self.clone(), Complex64::new(1.0, 0.0))] ;
         let members = &v[..] ;
-        let trimat = accel::rowwise::make_data(&members) ;
+        let trimat = accel::rowwise::make_trimat(&members) ;
         trimat.to_csr()
     }
 
@@ -439,7 +439,7 @@ impl SparsePauliOp {
     }
     pub fn to_matrix_rowwise(&self) -> sprs::CsMatI<Complex64, u64> {
         let members = &self.members[..] ;
-        let trimat = accel::rowwise::make_data(&members) ;
+        let trimat = accel::rowwise::make_trimat(&members) ;
         trimat.to_csr()
     }
 }
