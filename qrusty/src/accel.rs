@@ -106,32 +106,33 @@ pub fn rust_make_data(z: &Vec<bool>,
     }
 }
 
-pub fn rowwise_make_data(members : &[crate::PauliSummand],
-) -> TriMatI<Complex64,u64> {
+pub mod rowwise {
+    use num_complex::Complex64;
+    use sprs::{TriMatI};
 
-    let num_qubits = members[0].0.num_qubits() ;
-    let dim =  1 << num_qubits ;
-
-    let params : Vec<(u64, u64, Complex64)> =
+    pub fn make_params(members : &[crate::PauliSummand],
+    ) -> Vec<(u64, u64, Complex64)> {
         members.iter()
-        .map(|(p, coeff)| {
-            let phase = p.phase() ;
-            let coeff = *coeff ;
-	    let coeff = match phase % 4 {
-	        0 => Complex64::new(1.0, 0.0) * coeff,
-	        1 => Complex64::new(0.0, -1.0) * coeff,
-	        2 => Complex64::new(-1.0, 0.0) * coeff,
-	        3 => Complex64::new(0.0, 1.0) * coeff,
-	        _ => coeff // really should be assert!(false)
-	    } ;
-            (p.z_indices(), p.x_indices(), coeff)
-        })
-        .collect() ;
+            .map(|(p, coeff)| {
+                let phase = p.phase() ;
+                let coeff = *coeff ;
+	        let coeff = match phase % 4 {
+	            0 => Complex64::new(1.0, 0.0) * coeff,
+	            1 => Complex64::new(0.0, -1.0) * coeff,
+	            2 => Complex64::new(-1.0, 0.0) * coeff,
+	            3 => Complex64::new(0.0, 1.0) * coeff,
+	            _ => coeff // really should be assert!(false)
+	        } ;
+                (p.z_indices(), p.x_indices(), coeff)
+            })
+            .collect()
+    }
 
-    let mut trimat : TriMatI<Complex64, u64> = TriMatI::new((dim, dim)) ;
-    for rowind in 0..(dim as u64) {
+    pub fn make_row(params : &Vec<(u64, u64, Complex64)>, rowind : u64)
+        -> Vec<(usize, Complex64)>
+    {
         params.iter()
-            .for_each(|(z_indices, x_indices, coeff)| {
+            .map(|(z_indices, x_indices, coeff)| {
                 let colind = rowind ^ x_indices ;
                 let coeff = *coeff ;
                 let data = if (rowind & z_indices).count_ones() % 2 == 1 {
@@ -140,8 +141,27 @@ pub fn rowwise_make_data(members : &[crate::PauliSummand],
 	        else {
 		    coeff
 	        } ;
-                trimat.add_triplet(rowind as usize, colind as usize, data)
-            }) ;
+                (colind as usize, data)
+            })
+            .collect()
     }
-    trimat
+
+    pub fn make_data(members : &[crate::PauliSummand],
+    ) -> TriMatI<Complex64,u64> {
+
+        let num_qubits = members[0].0.num_qubits() ;
+        let dim =  1 << num_qubits ;
+
+        let params = make_params(members) ;
+
+        let mut trimat : TriMatI<Complex64, u64> = TriMatI::new((dim, dim)) ;
+        for rowind in 0..(dim as u64) {
+            let pairs = make_row(&params, rowind) ;
+            pairs.iter()
+                .for_each(|(colind, data)| {
+                    trimat.add_triplet(rowind as usize, *colind as usize, *data)
+                }) ;
+        }
+        trimat
+    }
 }
