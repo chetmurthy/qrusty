@@ -143,8 +143,9 @@ pub mod rowwise {
             .map(|(z_indices, x_indices, coeff)| {
                 let colind = rowind ^ x_indices ;
                 let coeff = *coeff ;
+                let minus_coeff = -coeff ;
                 let data = if (rowind & z_indices).count_ones() % 2 == 1 {
-		    -coeff
+		    minus_coeff
 	        }
 	        else {
 		    coeff
