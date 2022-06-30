@@ -3,13 +3,19 @@ use std::time::Instant;
 
 use sprs::{TriMatI};
 
-pub fn rust_make_data(z: &Vec<bool>,
+pub struct UnsafeVectors {
+    pub data : Vec<Complex64>,
+    pub indices: Vec<u64>,
+    pub indptr: Vec<u64>,
+}
+
+pub fn make_unsafe_vectors(z: &Vec<bool>,
                       x: &Vec<bool>,
                       coeff: Complex64,
 		      phase: i64,
 		      group_phase: bool,
                       for_ffi: bool,
-                ) -> std::result::Result<(Vec<Complex64>, Vec<u64>, Vec<u64>), &'static str> {
+                ) -> std::result::Result<UnsafeVectors, &'static str> {
     let debug = false ;
     let timings = false ;
     let now = Instant::now();
@@ -98,11 +104,11 @@ pub fn rust_make_data(z: &Vec<bool>,
 
         if timings { println!("AFTER data: {} ms", now.elapsed().as_millis()); }
 
-	Ok((
+	Ok(UnsafeVectors {
             data,
             indices,
             indptr,
-	))
+	})
     }
 }
 

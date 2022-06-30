@@ -203,37 +203,37 @@ impl Pauli {
         sp_mat
     }
 
-    pub fn to_triplets(&self) -> (Vec<Complex64>, Vec<u64>, Vec<u64>) {
+    pub fn to_unsafe_vectors(&self) -> accel::UnsafeVectors {
         let zs = self.zs() ;
         let xs = self.xs() ;
         let phase = self.phase() as i64 ;
         let coeff = Complex64::new(1.0, 0.0) ;
         let group_phase = false ;
-        let (data, indices, indptr) = accel::rust_make_data(&zs, &xs, coeff, phase, group_phase, false).expect("accelerated matrix creation failed") ;
-        (data, indices, indptr)
+        let usv = accel::make_unsafe_vectors(&zs, &xs, coeff, phase, group_phase, false).expect("accelerated matrix creation failed") ;
+        usv
     }
 
-    pub fn to_triplets_ffi(&self) -> (Vec<Complex64>, Vec<u64>, Vec<u64>) {
+    pub fn to_unsafe_vectors_ffi(&self) -> accel::UnsafeVectors {
         let zs = self.zs() ;
         let xs = self.xs() ;
         let phase = self.phase() as i64 ;
         let coeff = Complex64::new(1.0, 0.0) ;
         let group_phase = false ;
-        let (data, indices, indptr) = accel::rust_make_data(&zs, &xs, coeff, phase, group_phase, true).expect("accelerated matrix creation failed") ;
-        (data, indices, indptr)
+        let usv = accel::make_unsafe_vectors(&zs, &xs, coeff, phase, group_phase, true).expect("accelerated matrix creation failed") ;
+        usv
     }
 
     pub fn to_matrix_accel(&self) -> sprs::CsMatI<Complex64, u64> {
-        let (data, indices, indptr) = self.to_triplets_ffi() ;
+        let usv = self.to_unsafe_vectors_ffi() ;
         let dim = 1 << self.num_qubits() ;
 
         unsafe {
             CsMatI::<Complex64, u64, u64>::new_unchecked(
                 CompressedStorage::CSR,
                 (dim, dim),
-                indptr,
-                indices,
-                data,
+                usv.indptr,
+                usv.indices,
+                usv.data,
             )
         }
     }

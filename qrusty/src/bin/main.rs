@@ -139,8 +139,8 @@ fn main2() {
 
     println!("accel Y={:?}\n", sp_mat_accel) ;
 
-    let (data, indices, indptr) = p.to_triplets() ;
-    println!("data={:?}\nindices={:?}\nindptr={:?}\n", data, indices, indptr) ;
+    let usv = p.to_unsafe_vectors() ;
+    println!("data={:?}\nindices={:?}\nindptr={:?}\n", usv.data, usv.indices, usv.indptr) ;
 
 }
 fn main3() {
