@@ -115,6 +115,7 @@ pub fn make_unsafe_vectors(z: &Vec<bool>,
 pub mod rowwise {
     use num_complex::Complex64;
     use num_traits::Zero;
+    use rayon::prelude::*;
     use sprs::{TriMatI};
     use super::UnsafeVectors ;
 
@@ -201,14 +202,17 @@ pub mod rowwise {
 
         let params = make_params(members) ;
 
+        let accum_pairs : Vec<Vec<(u64, Complex64)>> =
+            (0..(dim as u64)).into_par_iter()
+             .map(|rowind| make_row(&params, rowind))
+             .collect() ;
+
         let mut indptr = Vec::with_capacity(dim+1) ;
-        let mut accum_pairs = Vec::with_capacity(dim) ;
         let mut nnz : u64 = 0 ;
         for rowind in 0..(dim as u64) {
-            let pairs = make_row(&params, rowind) ;
+            let pairs = &accum_pairs[rowind as usize] ;
             indptr.push(nnz) ;
             nnz += pairs.len() as u64;
-            accum_pairs.push(pairs) ;
         }
         indptr.push(nnz) ;
         let mut indices = Vec::with_capacity(nnz as usize) ;
