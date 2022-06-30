@@ -1,3 +1,4 @@
+#![allow(non_upper_case_globals)]
 #[macro_use]
 extern crate lazy_static;
 
@@ -19,7 +20,6 @@ mod accel ;
 pub mod util ;
 pub mod fixtures ;
 pub mod rawio ;
-
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct QrustyErr {
@@ -267,6 +267,57 @@ pub enum AccelMode {
     Reduce,
     Rayon,
     RayonChunked(usize),
+}
+
+lazy_static! {
+    static ref RowwiseUsafeChunkedRE : Regex = {
+        Regex::new(r"RowwiseUnsafeChunked/(\d+)").unwrap()
+    } ;
+    static ref RayonChunkedRE : Regex = {
+        Regex::new(r"RayonChunked/(\d+)").unwrap()
+    } ;
+        
+}
+
+
+impl TryFrom<&str> for AccelMode {
+    type Error = &'static str;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if value == "Binary" {
+            Ok(AccelMode::Binary)
+        }
+        else if value == "Accel" {
+            Ok(AccelMode::Accel)
+        }
+        else if value == "Rowwise" {
+            Ok(AccelMode::Rowwise)
+        }
+        else if value == "RowwiseUnsafe" {
+            Ok(AccelMode::RowwiseUnsafe)
+        }
+        else if RowwiseUsafeChunkedRE.is_match(value) {
+            let caps = RowwiseUsafeChunkedRE.captures(value).ok_or("internal error: RowwiseUsafeChunked")? ;
+            let s = caps.get(1).ok_or("internal error: RowwiseUsafeChunked: capture") ? ;
+            let n = s.as_str().parse().unwrap() ;
+            Ok(AccelMode::RowwiseUnsafeChunked(n))
+        }
+        else if value == "Reduce" {
+            Ok(AccelMode::Reduce)
+        }
+        else if value == "Rayon" {
+            Ok(AccelMode::Rayon)
+        }
+        else if RayonChunkedRE.is_match(value) {
+            let caps = RayonChunkedRE.captures(value).ok_or("internal error: RayonChunked")? ;
+            let s = caps.get(1).ok_or("internal error: RayonChunked: capture") ? ;
+            let n = s.as_str().parse().unwrap() ;
+            Ok(AccelMode::RayonChunked(n))
+        }
+        else {
+            Err("AccelMode:try_from: unrecognized argument string")
+        }
+    }
 }
 
 pub type PauliSummand = (Pauli, Complex64) ;

@@ -17,6 +17,7 @@ use sprs::io::{ read_matrix_market_from_bufread, write_matrix_market_to_bufwrite
 
 
 use qrusty::util::fileio::{ with_output_file, with_input_file } ;
+use qrusty::AccelMode;
 
 #[pyclass]
 #[repr(transparent)]
@@ -356,7 +357,7 @@ impl SparsePauliOp {
     pub fn to_matrix(&self) -> SpMat {
         SpMat::new_from_csmatrix(self.it.to_matrix())
     }
-
+/*
     pub fn to_matrix_binary(&self) -> SpMat {
         SpMat::new_from_csmatrix(self.it.to_matrix_binary())
     }
@@ -375,6 +376,17 @@ impl SparsePauliOp {
 
     pub fn to_matrix_rayon_chunked(&self, step : usize) -> SpMat {
         SpMat::new_from_csmatrix(self.it.to_matrix_rayon_chunked(step))
+    }
+*/
+    #[args(mode = "\"\"")]
+    fn to_matrix_mode(&self, mode: &str) -> PyResult<SpMat> {
+        let mode = if mode == "" { None }
+        else {
+            let mode = AccelMode::try_from(mode)
+                .map_err(|_| PyException::new_err(format!("to_matrix_mode: unrecognized mode {}", mode))) ? ;
+            Some(mode)
+        } ;
+        Ok(SpMat::new_from_csmatrix(self.it.to_matrix_mode(&mode)))
     }
 
     fn __repr__(&self) -> String {

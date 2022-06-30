@@ -1,8 +1,6 @@
 use num_complex::Complex64;
 use std::time::Instant;
 
-use sprs::{TriMatI};
-
 #[derive(Debug, PartialEq)]
 pub struct UnsafeVectors {
     pub data : Vec<Complex64>,
