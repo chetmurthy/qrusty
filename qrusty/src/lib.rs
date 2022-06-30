@@ -209,22 +209,12 @@ impl Pauli {
         let phase = self.phase() as i64 ;
         let coeff = Complex64::new(1.0, 0.0) ;
         let group_phase = false ;
-        let usv = accel::make_unsafe_vectors(&zs, &xs, coeff, phase, group_phase, false).expect("accelerated matrix creation failed") ;
-        usv
-    }
-
-    pub fn to_unsafe_vectors_ffi(&self) -> accel::UnsafeVectors {
-        let zs = self.zs() ;
-        let xs = self.xs() ;
-        let phase = self.phase() as i64 ;
-        let coeff = Complex64::new(1.0, 0.0) ;
-        let group_phase = false ;
-        let usv = accel::make_unsafe_vectors(&zs, &xs, coeff, phase, group_phase, true).expect("accelerated matrix creation failed") ;
+        let usv = accel::make_unsafe_vectors(&zs, &xs, coeff, phase, group_phase).expect("accelerated matrix creation failed") ;
         usv
     }
 
     pub fn to_matrix_accel(&self) -> sprs::CsMatI<Complex64, u64> {
-        let usv = self.to_unsafe_vectors_ffi() ;
+        let usv = self.to_unsafe_vectors() ;
         let dim = 1 << self.num_qubits() ;
 
         unsafe {

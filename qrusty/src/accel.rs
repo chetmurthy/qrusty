@@ -14,7 +14,6 @@ pub fn make_unsafe_vectors(z: &Vec<bool>,
                       coeff: Complex64,
 		      phase: i64,
 		      group_phase: bool,
-                      for_ffi: bool,
                 ) -> std::result::Result<UnsafeVectors, &'static str> {
     let debug = false ;
     let timings = false ;
@@ -67,7 +66,7 @@ pub fn make_unsafe_vectors(z: &Vec<bool>,
         if timings { println!("BEFORE indptr: {} ms", now.elapsed().as_millis()); }
 
 
-        let vecsize = if for_ffi { dim+1 } else { dim } ;
+        let vecsize = dim+1 ;
         let indptr : Vec<u64> = (0..vecsize).collect() ;
 
         if timings { println!("BEFORE indices: {} ms", now.elapsed().as_millis()); }
