@@ -68,7 +68,6 @@ lazy_static! {
             ToMatrixBinary,
             ToMatrixAccel,
             ToMatrixRowwiseUnsafe,
-            ToMatrix,
             ToMatrixReduce,
             ToMatrixRayon,
         ] ;
