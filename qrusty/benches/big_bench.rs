@@ -15,9 +15,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 	    let cl = &tc.coeffs[..] ;
 	    let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
             tc.ops.iter()
-                .for_each(|op| {
-                    group.bench_function(format!("{}+{:?}", tc.name, op), |b| b.iter(|| {
-                        op.to_matrix(&spop) ;
+                .for_each(|mode| {
+                    group.bench_function(format!("{}+{:?}", tc.name, mode), |b| b.iter(|| {
+                        spop.to_matrix_mode(&mode) ;
                     }));
                 }) ;
         }) ;

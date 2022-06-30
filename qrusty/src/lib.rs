@@ -104,7 +104,6 @@ impl SimplePauli {
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct Pauli {
     base_phase : usize,
@@ -257,6 +256,18 @@ impl Pauli {
     }
 }
 
+
+#[derive(Debug, Clone)]
+pub enum AccelMode {
+    Binary,
+    Accel,
+    Rowwise,
+    RowwiseUnsafe,
+    RowwiseUnsafeChunked(usize),
+    Reduce,
+    Rayon,
+    RayonChunked(usize),
+}
 
 pub type PauliSummand = (Pauli, Complex64) ;
 pub type PauliSum = Vec<PauliSummand> ;
@@ -477,6 +488,40 @@ impl SparsePauliOp {
         }
     }
 
+    pub fn to_unsafe_vectors_rowwise_chunked(&self, step : usize) -> accel::UnsafeVectors {
+        let members = &self.members[..] ;
+        let usv = accel::rowwise::make_unsafe_vectors_chunked(&members, step) ;
+        usv
+    }
+
+    pub fn to_matrix_rowwise_unsafe_chunked(&self, step : usize) -> sprs::CsMatI<Complex64, u64> {
+        let usv = self.to_unsafe_vectors_rowwise_chunked(step) ;
+        let dim = 1 << self.num_qubits() ;
+
+        unsafe {
+            CsMatI::<Complex64, u64, u64>::new_unchecked(
+                CompressedStorage::CSR,
+                (dim, dim),
+                usv.indptr,
+                usv.indices,
+                usv.data,
+            )
+        }
+    }
+
+    pub fn to_matrix_mode(&self, mode  : &Option<AccelMode>) -> CsMatI<Complex64, u64> {
+        match mode {
+            None => self.to_matrix(),
+            Some(AccelMode::Binary) => self.to_matrix_binary(),
+            Some(AccelMode::Accel) => self.to_matrix_accel(),
+            Some(AccelMode::Rowwise) => self.to_matrix_rowwise(),
+            Some(AccelMode::RowwiseUnsafe) => self.to_matrix_rowwise_unsafe(),
+            Some(AccelMode::RowwiseUnsafeChunked(step)) => self.to_matrix_rowwise_unsafe_chunked(*step),
+            Some(AccelMode::Reduce) => self.to_matrix_reduce(),
+            Some(AccelMode::Rayon) => self.to_matrix_rayon(),
+            Some(AccelMode::RayonChunked(step)) => self.to_matrix_rayon_chunked(*step),
+        }
+    }
 }
 
 impl_op_ex!(+ |a: &SparsePauliOp, b: &SparsePauliOp| -> SparsePauliOp {
@@ -700,32 +745,7 @@ phase=2
         assert_eq!(spop.to_matrix_rowwise(),
                    spop.to_matrix_rowwise_unsafe(),
         ) ;
-    }
-
-    #[test]
-    fn h2_debug() {
-        let labels = vec![
-	    "YYYY", "XXYY"
-	] ;
-	let coeffs = vec![
-	    "1+0j", "1+0j"
-	] ;
-	let coeffs = util::complex64_list_from_string_list(&coeffs) ;
-	let spop = SparsePauliOp::from_labels(&labels[..], &coeffs[..]).unwrap() ;
-        assert_abs_diff_eq!(spop.to_matrix_rayon(),
-                     spop.to_matrix(),
-                     epsilon = 1e-7
-        ) ;
-        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
-                     spop.to_matrix(),
-                     epsilon = 1e-7
-        ) ;
-        let usv = spop.to_unsafe_vectors_rowwise() ;
-        println!("indptr: {:?}\nindices: {:?}\ndata: {:?}", usv.indptr, usv.indices, usv.data) ;
-        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
-                     spop.to_matrix_rowwise_unsafe(),
-                     epsilon = 1e-7
-        ) ;
+        assert_eq!(spop.to_matrix_rowwise(), spop.to_matrix_rowwise_unsafe_chunked(500)) ;
     }
 
     #[test]
@@ -744,6 +764,10 @@ phase=2
         ) ;
         assert_abs_diff_eq!(spop.to_matrix_rowwise(),
                      spop.to_matrix_rowwise_unsafe(),
+                     epsilon = 1e-7
+        ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix_rowwise_unsafe_chunked(500),
                      epsilon = 1e-7
         ) ;
     }
@@ -766,6 +790,10 @@ phase=2
                      spop.to_matrix_rowwise_unsafe(),
                      epsilon = 1e-7
         ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix_rowwise_unsafe_chunked(500),
+                     epsilon = 1e-7
+        ) ;
     }
 
     #[test]
@@ -784,6 +812,10 @@ phase=2
         ) ;
         assert_abs_diff_eq!(spop.to_matrix_rowwise(),
                      spop.to_matrix_rowwise_unsafe(),
+                     epsilon = 1e-7
+        ) ;
+        assert_abs_diff_eq!(spop.to_matrix_rowwise(),
+                     spop.to_matrix_rowwise_unsafe_chunked(500),
                      epsilon = 1e-7
         ) ;
     }

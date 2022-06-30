@@ -117,6 +117,8 @@ pub mod rowwise {
     use num_traits::Zero;
     use rayon::prelude::*;
     use sprs::{TriMatI};
+    use std::cmp::min;
+
     use super::UnsafeVectors ;
 
     pub fn make_params(members : &[crate::PauliSummand],
@@ -224,6 +226,59 @@ pub mod rowwise {
                           indices.push(*colind) ;
                           data.push(*v) ;
                       })) ;
+        UnsafeVectors {
+            data,
+            indices,
+            indptr,
+	}
+    }
+
+    pub fn make_unsafe_vectors_chunked(members : &[crate::PauliSummand],
+                                       step : usize,
+    ) -> UnsafeVectors {
+
+        let num_qubits = members[0].0.num_qubits() ;
+        let dim : usize =  1 << num_qubits ;
+
+        let params = make_params(members) ;
+
+        let chunks : Vec<(u64, u64)> =
+            (0..(dim as u64))
+            .into_iter()
+            .step_by(step)
+            .map(|n| (n,min(n + step as u64, dim as u64)))
+            .collect();
+
+        let chunked_vec : Vec<Vec<Vec<(u64, Complex64)>>> =
+            chunks.par_iter()
+            .map(|(lo,hi)| {
+                (*lo..*hi).map(|rowind| make_row(&params, rowind)).collect()
+            })
+            .collect() ;
+
+
+        let mut indptr = Vec::with_capacity(dim+1) ;
+        let mut nnz : u64 = 0 ;
+        for rowind in 0..(dim as u64) {
+            let chunkind = rowind / step as u64 ;
+            let chunkofs = rowind % step as u64 ;
+            let pairs = &chunked_vec[chunkind as usize][chunkofs as usize] ;
+            indptr.push(nnz) ;
+            nnz += pairs.len() as u64;
+        }
+        indptr.push(nnz) ;
+        let mut indices = Vec::with_capacity(nnz as usize) ;
+        let mut data = Vec::with_capacity(nnz as usize) ;
+        chunked_vec.iter()
+            .for_each(|vv|
+                      vv.iter()
+                      .for_each(|v|
+                                v.iter()
+                                .for_each(|(colind, v)| {
+                                    indices.push(*colind) ;
+                                    data.push(*v) ;
+                                }))
+                      ) ;
         UnsafeVectors {
             data,
             indices,
