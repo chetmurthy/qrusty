@@ -20,6 +20,8 @@ pyo3 = { version = "0.16.5", features = ["extension-module"] }
 cpu-endian = "0.1.1"
 log = "0.4.17"
 approx = { version = "0.5.1", features = ["num-complex"] }
+si-scale = "0.1.5"
+conv = "0.3.3"
 
 [dev-dependencies]
 criterion = "0.3"
