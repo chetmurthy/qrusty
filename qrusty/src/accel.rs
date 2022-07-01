@@ -283,9 +283,9 @@ pub mod rowwise {
         for rowind in 0..(dim as u64) {
             let chunkind = rowind / step as u64 ;
             let chunkofs = rowind % step as u64 ;
-            let rc = &chunked_vec[chunkind as usize].1[chunkofs as usize] ;
+	    let row_nnz = chunked_vec[chunkind as usize].0[chunkofs as usize] ;
             indptr.push(nnz) ;
-            nnz += rc.0.len() as u64;
+            nnz += row_nnz as u64;
         }
         if debug { println!("EVENT nnz: {}", number_(f64::value_from(nnz).unwrap())) ; }
         indptr.push(nnz) ;
