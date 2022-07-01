@@ -111,6 +111,7 @@ pub fn make_unsafe_vectors(z: &Vec<bool>,
 }
 
 pub mod rowwise {
+    use std::time::Instant;
     use num_complex::Complex64;
     use num_traits::Zero;
     use rayon::prelude::*;
@@ -235,6 +236,12 @@ pub mod rowwise {
                                        step : usize,
     ) -> UnsafeVectors {
 
+        let timings = true ;
+
+        let now = Instant::now();
+
+        if timings { println!("START make_unsafe_vectors_chunked: {} ms", now.elapsed().as_millis()) ; }
+
         let num_qubits = members[0].0.num_qubits() ;
         let dim : usize =  1 << num_qubits ;
 
@@ -254,6 +261,7 @@ pub mod rowwise {
             })
             .collect() ;
 
+        if timings { println!("AFTER CHUNKS make_unsafe_vectors_chunked: {} ms", now.elapsed().as_millis()) ; }
 
         let mut indptr = Vec::with_capacity(dim+1) ;
         let mut nnz : u64 = 0 ;
@@ -277,6 +285,7 @@ pub mod rowwise {
                                     data.push(*v) ;
                                 }))
                       ) ;
+        if timings { println!("END make_unsafe_vectors_chunked: {} ms", now.elapsed().as_millis()) ; }
         UnsafeVectors {
             data,
             indices,
