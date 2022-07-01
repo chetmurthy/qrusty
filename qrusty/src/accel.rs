@@ -266,18 +266,19 @@ pub mod rowwise {
             .map(|n| (n,min(n + step as u64, dim as u64)))
             .collect();
 
-        let chunked_vec : Vec<(Vec<u64>, Vec<RowContents>)> =
+        let chunked_vec : Vec<(Vec<u64>, RowContents)> =
             chunks.par_iter()
             .map(|(lo,hi)| {
                 let v_rc : Vec<RowContents> = (*lo..*hi).map(|rowind| make_row(&params, rowind)).collect() ;
 		let v_nnz : Vec<u64> = v_rc.iter()
 		    .map(|v| v.0.len() as u64).collect() ;
 		let sum_nnz : u64 = v_nnz.iter().sum() ;
-/*
 		let mut indices = Vec::with_capacity(sum_nnz as usize) ;
 		let mut data = Vec::with_capacity(sum_nnz as usize) ;
-*/
-		(v_nnz, v_rc)
+		let mut dst_rc = (indices, data) ;
+		v_rc.iter()
+		    .for_each(|(colv,datav)| append_rc(&mut dst_rc, colv, datav)) ;
+		(v_nnz, dst_rc)
             })
             .collect() ;
 
@@ -299,12 +300,7 @@ pub mod rowwise {
         let mut data = Vec::with_capacity(nnz as usize) ;
 	let mut dst_rc = (indices, data) ;
         chunked_vec.iter()
-            .for_each(|(_,vv)|
-                      vv.iter()
-                      .for_each(|(colv,datav)| {
-			  append_rc(&mut dst_rc,colv, datav) ;
-		      })
-                      ) ;
+            .for_each(|(_,vv)| append_rc(&mut dst_rc, &vv.0[..], &vv.1[..])) ;
         if debug { println!("EVENT indices.len()={} data.len()={} ",
 			    number_(f64::value_from(dst_rc.0.len()).unwrap()),
 			    number_(f64::value_from(dst_rc.1.len()).unwrap())) ; }
