@@ -140,8 +140,10 @@ pub mod rowwise {
             .collect()
     }
 
+    type RowContents = (Vec<u64>, Vec<Complex64>) ;
+
     pub fn make_row(params : &Vec<(u64, u64, Complex64)>, rowind : u64)
-        -> Vec<(u64, Complex64)>
+        -> RowContents
     {
         let mut v : Vec<(u64, Complex64)> = params.iter()
             .map(|(z_indices, x_indices, coeff)| {
@@ -158,7 +160,8 @@ pub mod rowwise {
             })
             .collect() ;
         v.sort_by(|a, b| a.0.cmp(&b.0)) ;
-        let mut w = Vec::new() ;
+        let mut colw = Vec::new() ;
+        let mut dataw = Vec::new() ;
         let (first, col, sum) = v.iter()
             .fold((true, 0, Complex64::zero()),
                   |(first, prevcol,runningsum),(colind,v)| {
@@ -169,13 +172,15 @@ pub mod rowwise {
                           let runningsum = runningsum + *v ;
                           (false, prevcol, runningsum)
                       } else {
-                          w.push((prevcol, runningsum)) ;
+                          colw.push(prevcol) ;
+                          dataw.push(runningsum) ;
                           (false, *colind, *v)
                       }
                   }) ;
         assert!(!first) ;
-        w.push((col as u64, sum)) ;
-        w
+        colw.push(col as u64) ;
+        dataw.push(sum) ;
+        (colw, dataw)
     }
 
     pub fn make_trimat(members : &[crate::PauliSummand],
@@ -188,8 +193,9 @@ pub mod rowwise {
 
         let mut trimat : TriMatI<Complex64, u64> = TriMatI::new((dim, dim)) ;
         for rowind in 0..(dim as u64) {
-            let pairs = make_row(&params, rowind) ;
-            pairs.iter()
+            let rcont = make_row(&params, rowind) ;
+            rcont.0.iter()
+                .zip(rcont.1.iter())
                 .for_each(|(colind, data)| {
                     trimat.add_triplet(rowind as usize, *colind as usize, *data)
                 }) ;
@@ -205,7 +211,7 @@ pub mod rowwise {
 
         let params = make_params(members) ;
 
-        let accum_pairs : Vec<Vec<(u64, Complex64)>> =
+        let accum_pairs : Vec<RowContents> =
             (0..(dim as u64)).into_par_iter()
              .map(|rowind| make_row(&params, rowind))
              .collect() ;
@@ -213,20 +219,18 @@ pub mod rowwise {
         let mut indptr = Vec::with_capacity(dim+1) ;
         let mut nnz : u64 = 0 ;
         for rowind in 0..(dim as u64) {
-            let pairs = &accum_pairs[rowind as usize] ;
+            let rc = &accum_pairs[rowind as usize] ;
             indptr.push(nnz) ;
-            nnz += pairs.len() as u64;
+            nnz += rc.0.len() as u64;
         }
         indptr.push(nnz) ;
         let mut indices = Vec::with_capacity(nnz as usize) ;
         let mut data = Vec::with_capacity(nnz as usize) ;
         accum_pairs.iter()
-            .for_each(|v|
-                      v.iter()
-                      .for_each(|(colind, v)| {
-                          indices.push(*colind) ;
-                          data.push(*v) ;
-                      })) ;
+            .for_each(|(colv,datav)| {
+                colv.iter().for_each(|colind| indices.push(*colind)) ;
+		datav.iter().for_each(|v| data.push(*v)) ;
+            }) ;
         UnsafeVectors {
             data,
             indices,
@@ -257,7 +261,7 @@ pub mod rowwise {
             .map(|n| (n,min(n + step as u64, dim as u64)))
             .collect();
 
-        let chunked_vec : Vec<Vec<Vec<(u64, Complex64)>>> =
+        let chunked_vec : Vec<Vec<RowContents>> =
             chunks.par_iter()
             .map(|(lo,hi)| {
                 (*lo..*hi).map(|rowind| make_row(&params, rowind)).collect()
@@ -271,9 +275,9 @@ pub mod rowwise {
         for rowind in 0..(dim as u64) {
             let chunkind = rowind / step as u64 ;
             let chunkofs = rowind % step as u64 ;
-            let pairs = &chunked_vec[chunkind as usize][chunkofs as usize] ;
+            let rc = &chunked_vec[chunkind as usize][chunkofs as usize] ;
             indptr.push(nnz) ;
-            nnz += pairs.len() as u64;
+            nnz += rc.0.len() as u64;
         }
         if debug { println!("EVENT nnz: {}", number_(f64::value_from(nnz).unwrap())) ; }
         indptr.push(nnz) ;
@@ -283,12 +287,10 @@ pub mod rowwise {
         chunked_vec.iter()
             .for_each(|vv|
                       vv.iter()
-                      .for_each(|v|
-                                v.iter()
-                                .for_each(|(colind, v)| {
-                                    indices.push(*colind) ;
-                                    data.push(*v) ;
-                                }))
+                      .for_each(|(colv,datav)| {
+			  colv.iter().for_each(|colind| indices.push(*colind)) ;
+			  datav.iter().for_each(|v| data.push(*v)) ;
+		      })
                       ) ;
         if debug { println!("EVENT indices.len()={} data.len()={} ",
 			    number_(f64::value_from(indices.len()).unwrap()),
