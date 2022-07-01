@@ -261,10 +261,18 @@ pub mod rowwise {
             .map(|n| (n,min(n + step as u64, dim as u64)))
             .collect();
 
-        let chunked_vec : Vec<Vec<RowContents>> =
+        let chunked_vec : Vec<(Vec<u64>, Vec<RowContents>)> =
             chunks.par_iter()
             .map(|(lo,hi)| {
-                (*lo..*hi).map(|rowind| make_row(&params, rowind)).collect()
+                let v_rc : Vec<RowContents> = (*lo..*hi).map(|rowind| make_row(&params, rowind)).collect() ;
+		let v_nnz : Vec<u64> = v_rc.iter()
+		    .map(|v| v.0.len() as u64).collect() ;
+		let sum_nnz : u64 = v_nnz.iter().sum() ;
+/*
+		let mut indices = Vec::with_capacity(sum_nnz as usize) ;
+		let mut data = Vec::with_capacity(sum_nnz as usize) ;
+*/
+		(v_nnz, v_rc)
             })
             .collect() ;
 
@@ -275,7 +283,7 @@ pub mod rowwise {
         for rowind in 0..(dim as u64) {
             let chunkind = rowind / step as u64 ;
             let chunkofs = rowind % step as u64 ;
-            let rc = &chunked_vec[chunkind as usize][chunkofs as usize] ;
+            let rc = &chunked_vec[chunkind as usize].1[chunkofs as usize] ;
             indptr.push(nnz) ;
             nnz += rc.0.len() as u64;
         }
@@ -285,7 +293,7 @@ pub mod rowwise {
         let mut indices = Vec::with_capacity(nnz as usize) ;
         let mut data = Vec::with_capacity(nnz as usize) ;
         chunked_vec.iter()
-            .for_each(|vv|
+            .for_each(|(_,vv)|
                       vv.iter()
                       .for_each(|(colv,datav)| {
 			  colv.iter().for_each(|colind| indices.push(*colind)) ;
