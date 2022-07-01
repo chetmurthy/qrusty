@@ -297,21 +297,21 @@ pub mod rowwise {
         if timings { println!("AFTER built indptr: {}", seconds(now.elapsed().as_secs_f64())) ; }
         let mut indices = Vec::with_capacity(nnz as usize) ;
         let mut data = Vec::with_capacity(nnz as usize) ;
+	let mut dst_rc = (indices, data) ;
         chunked_vec.iter()
             .for_each(|(_,vv)|
                       vv.iter()
                       .for_each(|(colv,datav)| {
-			  colv.iter().for_each(|colind| indices.push(*colind)) ;
-			  datav.iter().for_each(|v| data.push(*v)) ;
+			  append_rc(&mut dst_rc,colv, datav) ;
 		      })
                       ) ;
         if debug { println!("EVENT indices.len()={} data.len()={} ",
-			    number_(f64::value_from(indices.len()).unwrap()),
-			    number_(f64::value_from(data.len()).unwrap())) ; }
+			    number_(f64::value_from(dst_rc.0.len()).unwrap()),
+			    number_(f64::value_from(dst_rc.1.len()).unwrap())) ; }
         if timings { println!("END make_unsafe_vectors_chunked: {}", seconds(now.elapsed().as_secs_f64())) ; }
         UnsafeVectors {
-            data,
-            indices,
+            data : dst_rc.1,
+            indices : dst_rc.0,
             indptr,
 	}
     }
