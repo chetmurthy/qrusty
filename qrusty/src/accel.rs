@@ -142,6 +142,11 @@ pub mod rowwise {
 
     type RowContents = (Vec<u64>, Vec<Complex64>) ;
 
+    fn append_rc(lhs : &mut RowContents, colv : &[u64], datav : &[Complex64]) {
+	colv.iter().for_each(|v| lhs.0.push(*v)) ;
+	datav.iter().for_each(|v| lhs.1.push(*v)) ;
+    }
+
     pub fn make_row(params : &Vec<(u64, u64, Complex64)>, rowind : u64)
         -> RowContents
     {
@@ -226,14 +231,14 @@ pub mod rowwise {
         indptr.push(nnz) ;
         let mut indices = Vec::with_capacity(nnz as usize) ;
         let mut data = Vec::with_capacity(nnz as usize) ;
+	let mut dst_rc = (indices, data) ;
         accum_pairs.iter()
             .for_each(|(colv,datav)| {
-                colv.iter().for_each(|colind| indices.push(*colind)) ;
-		datav.iter().for_each(|v| data.push(*v)) ;
+		append_rc(&mut dst_rc,colv, datav) ;
             }) ;
         UnsafeVectors {
-            data,
-            indices,
+            data : dst_rc.1,
+            indices : dst_rc.0,
             indptr,
 	}
     }
