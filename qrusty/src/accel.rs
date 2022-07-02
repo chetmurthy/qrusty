@@ -147,6 +147,11 @@ pub mod rowwise {
 	datav.iter().for_each(|v| lhs.1.push(*v)) ;
     }
 
+    fn append_rc1(lhs : &mut RowContents, colv : &[u64], datav : &[Complex64]) {
+	lhs.0.copy_from_slice(colv) ;
+	lhs.1.copy_from_slice(datav) ;
+    }
+
     pub fn make_row(params : &Vec<(u64, u64, Complex64)>, rowind : u64)
         -> RowContents
     {
