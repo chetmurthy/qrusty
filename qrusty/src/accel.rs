@@ -278,11 +278,12 @@ pub mod rowwise {
 		let v_nnz : Vec<u64> = v_rc.iter()
 		    .map(|v| v.0.len() as u64).collect() ;
 		let sum_nnz : u64 = v_nnz.iter().sum() ;
-		let mut indices = Vec::with_capacity(sum_nnz as usize) ;
-		let mut data = Vec::with_capacity(sum_nnz as usize) ;
+
+		let indices_v : Vec<&[u64]> = v_rc.iter().map(|rc| &(rc.0)[..]).collect() ;
+		let data_v : Vec<&[Complex64]> = v_rc.iter().map(|rc| &(rc.1)[..]).collect() ;
+		let indices = crate::util::slice::concat_slices(&indices_v[..]) ;
+		let data = crate::util::slice::concat_slices(&data_v[..]) ;
 		let mut dst_rc = (indices, data) ;
-		v_rc.iter()
-		    .for_each(|(colv,datav)| append_rc(&mut dst_rc, colv, datav)) ;
 		(v_nnz, dst_rc)
             })
             .collect() ;
@@ -301,18 +302,19 @@ pub mod rowwise {
         if debug { println!("EVENT nnz: {}", number_(f64::value_from(nnz).unwrap())) ; }
         indptr.push(nnz) ;
         if timings { println!("AFTER built indptr: {}", seconds(now.elapsed().as_secs_f64())) ; }
-        let mut indices = Vec::with_capacity(nnz as usize) ;
-        let mut data = Vec::with_capacity(nnz as usize) ;
-	let mut dst_rc = (indices, data) ;
-        chunked_vec.iter()
-            .for_each(|(_,vv)| append_rc(&mut dst_rc, &vv.0[..], &vv.1[..])) ;
+
+	let indices_v : Vec<&[u64]> = chunked_vec.iter().map(|(_,rc)| &(rc.0)[..]).collect() ;
+	let data_v : Vec<&[Complex64]> = chunked_vec.iter().map(|(_,rc)| &(rc.1)[..]).collect() ;
+	let indices = crate::util::slice::concat_slices(&indices_v[..]) ;
+	let data = crate::util::slice::concat_slices(&data_v[..]) ;
+
         if debug { println!("EVENT indices.len()={} data.len()={} ",
-			    number_(f64::value_from(dst_rc.0.len()).unwrap()),
-			    number_(f64::value_from(dst_rc.1.len()).unwrap())) ; }
+			    number_(f64::value_from(indices.len()).unwrap()),
+			    number_(f64::value_from(data.len()).unwrap())) ; }
         if timings { println!("END make_unsafe_vectors_chunked: {}", seconds(now.elapsed().as_secs_f64())) ; }
         UnsafeVectors {
-            data : dst_rc.1,
-            indices : dst_rc.0,
+            data,
+            indices,
             indptr,
 	}
     }
