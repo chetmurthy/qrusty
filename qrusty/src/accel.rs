@@ -119,6 +119,7 @@ pub mod rowwise {
     use sprs::{TriMatI};
     use std::cmp::min;
     use conv::prelude::* ;
+    use rayon_subslice::{ concat_slices, par_concat_slices, unsafe_concat_slices, unsafe_par_concat_slices };
 
     use super::UnsafeVectors ;
 
@@ -281,8 +282,8 @@ pub mod rowwise {
 
 		let indices_v : Vec<&[u64]> = v_rc.iter().map(|rc| &(rc.0)[..]).collect() ;
 		let data_v : Vec<&[Complex64]> = v_rc.iter().map(|rc| &(rc.1)[..]).collect() ;
-		let indices = crate::util::slice::concat_slices(&indices_v[..]) ;
-		let data = crate::util::slice::concat_slices(&data_v[..]) ;
+		let indices = concat_slices(&indices_v[..]) ;
+		let data = concat_slices(&data_v[..]) ;
 		let mut dst_rc = (indices, data) ;
 		(v_nnz, dst_rc)
             })
@@ -305,8 +306,8 @@ pub mod rowwise {
 
 	let indices_v : Vec<&[u64]> = chunked_vec.iter().map(|(_,rc)| &(rc.0)[..]).collect() ;
 	let data_v : Vec<&[Complex64]> = chunked_vec.iter().map(|(_,rc)| &(rc.1)[..]).collect() ;
-	let indices = crate::util::slice::concat_slices(&indices_v[..]) ;
-	let data = crate::util::slice::concat_slices(&data_v[..]) ;
+	let indices = concat_slices(&indices_v[..]) ;
+	let data = concat_slices(&data_v[..]) ;
 
         if debug { println!("EVENT indices.len()={} data.len()={} ",
 			    number_(f64::value_from(indices.len()).unwrap()),

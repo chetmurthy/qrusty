@@ -11,6 +11,7 @@ num-complex = ">= 0.4, < 0.4.2"
 clap = { version = "3.0", features = ["derive"] }
 flate2 = "1.0.24"
 sprs = { path = "../../sprs/sprs", features = ["approx"] }
+rayon-subslice = { path = "../../rayon-subslice" }
 regex = "1"
 lazy_static = "1.4.0"
 ndarray = { version = "0.15.3", features = ["approx-0_5"] }
