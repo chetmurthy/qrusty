@@ -18,7 +18,6 @@ def build_spop(labels, coeffs):
 
 
 # ================================================================
-# number of terms in the fermionic Hamiltonian: 72
 H2 = build_spop(
     [
         "IIII",
@@ -81,7 +80,6 @@ H2 = build_spop(
 )
 
 # ================================================================
-# number of terms in the fermionic Hamiltonian: 1056
 H4 = build_spop(
     [
         "IIIIIIII",
@@ -811,7 +809,6 @@ H4 = build_spop(
     ],
 )
 # ================================================================
-# number of terms in the fermionic Hamiltonian: 5256
 H6 = build_spop(
     [
         "IIIIIIIIIIII",
@@ -4457,7 +4454,6 @@ H6 = build_spop(
     ],
 )
 # ================================================================
-# number of terms in the fermionic Hamiltonian: 16512
 H8 = build_spop(
     [
         "IIIIIIIIIIIIIIII",
@@ -16051,7 +16047,6 @@ H8 = build_spop(
     ],
 )
 # ================================================================
-# number of terms in the fermionic Hamiltonian: 40200
 H10 = build_spop(
     [
         "IIIIIIIIIIIIIIIIIIII",
@@ -44561,7 +44556,6 @@ H10 = build_spop(
     ],
 )
 # ================================================================
-# number of terms in the fermionic Hamiltonian: 58806
 H11 = build_spop(
     [
         "IIIIIIIIIIIIIIIIIIIIII",
@@ -95406,7 +95400,7 @@ H12 = build_spop(
     ],
 )
 
-HJulien = build_spop(
+HJ = build_spop(
     [
         "IIIIIIIIIIIIIIIIIIIIIIIIIZZ",
         "IIIIIIIIIIIIIIIIIIIZIIZIIII",
