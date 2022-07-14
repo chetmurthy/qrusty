@@ -7,7 +7,23 @@ It is meant as a sandbox to experiment with code that is meant to be compatible 
 
 ## Installation
 
-Installation instructions here.
+```
+rustc --version
+```
+This should show version 1.61, mine prints 
+
+```
+>>> rustc 1.61.0 (fe5b13d68 2022-05-18)
+```
+
+Next we build using `cargo`
+
+```
+# go into pyqrusty dir
+cd qrusty/pyqrusty
+pip install maturin
+maturin develop
+```
 
 ## License
 
