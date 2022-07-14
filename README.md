@@ -16,7 +16,7 @@ This should show version 1.61, mine prints
 >>> rustc 1.61.0 (fe5b13d68 2022-05-18)
 ```
 
-Next we build using `cargo`
+Next we build using `maturin`
 
 ```
 # go into pyqrusty dir
