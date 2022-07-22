@@ -440,6 +440,24 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
 	Ok(y.into_pyarray(py).into())
     }
 
+    fn axpy(a: Complex64, x: ArrayView<Complex64, Dim<[usize; 1]>>, y: ArrayView<Complex64, Dim<[usize; 1]>>) -> Array<Complex64, Dim<[usize; 1]>> {
+        a * &x + &y
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "axpy")]
+    fn axpy_py<'py>(
+        py: Python<'py>,
+        a: Complex64,
+        x: PyReadonlyArray1<'_, Complex64>,
+        y: PyReadonlyArray1<'_, Complex64>,
+    ) -> PyResult<PyObject> {
+        let x = x.as_array();
+        let y = y.as_array();
+        let z = axpy(a, x, y);
+	Ok(z.into_pyarray(py).into())
+    }
+
     m.add_class::<Pauli>()?;
     m.add_class::<SparsePauliOp>()?;
     m.add_class::<SpMat>()?;

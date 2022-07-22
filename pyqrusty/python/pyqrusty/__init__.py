@@ -8,7 +8,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from .pyqrusty import Pauli, SparsePauliOp, SpMat, spmat_dot_densevec
+from .pyqrusty import Pauli, SparsePauliOp, SpMat, spmat_dot_densevec, axpy
 
 def csr_matrix(m):
     (shape, data, indices, indptr) = m.export()

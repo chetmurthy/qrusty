@@ -206,3 +206,16 @@ def test_spmat_dot_densevec_H6():
     rows = csrm.shape[0]
     x = np.random.random(rows) + np.random.random(rows) * 1j
     assert np.allclose(spmat_dot_densevec(m, x), csrm.dot(x))
+
+def test_axpy():
+    x = np.array([1.0 + 2j, 2.0 + 3j, 3.0 + 4j, 4.0 + 5j])
+    y = np.ones(4, dtype=complex)
+    a = 0.0 + 1.0j
+    assert np.allclose(axpy(a,x,y), a * x + y)
+
+def test_axpy2():
+    rows = 1<<20
+    x = np.random.random(rows) + np.random.random(rows) * 1j
+    y = np.random.random(rows) + np.random.random(rows) * 1j
+    a = 0.0 + 1.0j
+    assert np.allclose(axpy(a,x,y), a * x + y)
