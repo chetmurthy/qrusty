@@ -596,7 +596,10 @@ impl_op_ex!(+ |a: &SparsePauliOp, b: &SparsePauliOp| -> SparsePauliOp {
 mod tests {
     use num_complex::Complex64;
     use ndarray::array ;
-    use ndarray::Array2;
+    use ndarray::{Array, Array2};
+    use ndarray_rand::RandomExt;
+    use ndarray_rand::rand_distr::Uniform;
+    use ndarray::linalg::Dot;
     use sprs::*;
     use ::approx::{ abs_diff_eq, assert_abs_diff_eq, abs_diff_ne, assert_abs_diff_ne, } ;
 
@@ -878,6 +881,23 @@ phase=2
         assert_abs_diff_eq!(spop.to_matrix_rowwise(),
                      spop.to_matrix_rowwise_unsafe_chunked(500),
                      epsilon = 1e-7
+        ) ;
+    }
+
+    #[test]
+    fn spmat_dot_densevec() {
+        let tc = &crate::fixtures::H2 ;
+	let ll = &tc.labels[..] ;
+	let cl = &tc.coeffs[..] ;
+	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
+	let spmat = spop.to_matrix_rowwise_unsafe_chunked(500) ;
+	let a : Array<f64, _> = Array::random(spmat.rows(), Uniform::new(0., 10.));
+	let a : Array<Complex64, _> = a.iter().map(|v| { Complex64::new(*v, 0.0) }).collect() ;
+	let b = spmat.dot(&a) ;
+
+	let b2 = accel::rowwise::spmat_dot_densevec(&spmat, &a) ;
+        assert_abs_diff_eq!(b, b2,
+			    epsilon = 1e-7
         ) ;
     }
 }
