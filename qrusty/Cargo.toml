@@ -42,6 +42,10 @@ name = "main"
 src = "src/bin/main.rs"
 
 [[bin]]
+name = "main2"
+src = "src/bin/main2.rs"
+
+[[bin]]
 name = "test1"
 src = "src/bin/test1.rs"
 
