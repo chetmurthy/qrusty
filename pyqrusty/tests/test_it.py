@@ -199,3 +199,10 @@ def test_spmat_dot_densevec():
     csr_matIX = csr_matrix(pIX.to_matrix())
     x = np.array([1.0 + 2j, 2.0 + 3j, 3.0 + 4j, 4.0 + 5j])
     assert np.allclose(spmat_dot_densevec(matIX, x), csr_matIX.dot(x))
+
+def test_spmat_dot_densevec_H6():
+    m = H6.to_matrix()
+    csrm = csr_matrix(H6.to_matrix())
+    rows = csrm.shape[0]
+    x = np.random.random(rows) + np.random.random(rows) * 1j
+    assert np.allclose(spmat_dot_densevec(m, x), csrm.dot(x))

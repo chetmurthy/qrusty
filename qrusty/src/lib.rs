@@ -885,8 +885,25 @@ phase=2
     }
 
     #[test]
-    fn spmat_dot_densevec() {
+    fn spmat_dot_densevec_H2() {
         let tc = &crate::fixtures::H2 ;
+	let ll = &tc.labels[..] ;
+	let cl = &tc.coeffs[..] ;
+	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
+	let spmat = spop.to_matrix_rowwise_unsafe_chunked(500) ;
+	let a : Array<f64, _> = Array::random(spmat.rows(), Uniform::new(0., 10.));
+	let a : Array<Complex64, _> = a.iter().map(|v| { Complex64::new(*v, 0.0) }).collect() ;
+	let b = spmat.dot(&a) ;
+
+	let b2 = accel::rowwise::spmat_dot_densevec(&spmat, &a.view()) ;
+        assert_abs_diff_eq!(b, b2,
+			    epsilon = 1e-7
+        ) ;
+    }
+
+    #[test]
+    fn spmat_dot_densevec_H6() {
+        let tc = &crate::fixtures::H6 ;
 	let ll = &tc.labels[..] ;
 	let cl = &tc.coeffs[..] ;
 	let spop = SparsePauliOp::from_labels(ll, cl).unwrap() ;
