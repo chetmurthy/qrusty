@@ -450,7 +450,7 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
     ) -> PyResult<PyObject> {
         let x = x.as_array();
         let y = y.as_array();
-        let z = qrusty::accel::axpy(a, x, y);
+        let z = qrusty::accel::axpy(a, &x, &y);
 	Ok(z.into_pyarray(py).into())
     }
 

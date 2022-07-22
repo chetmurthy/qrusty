@@ -32,14 +32,22 @@ features = ["rayon", "approx-0_5"]
 criterion = "0.3"
 
 [[bench]]
+name = "bench_axpy"
+harness = false
+html_reports = true
+bench = true
+
+[[bench]]
 name = "bench1"
 harness = false
 html_reports = true
+bench = false
 
 [[bench]]
 name = "big_bench"
 harness = false
 html_reports = true
+bench = false
 
 [[bin]]
 name = "main"

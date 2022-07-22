@@ -8,7 +8,7 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-use num_complex::Complex64;
+use std::mem::MaybeUninit;use num_complex::Complex64;
 use std::time::Instant;
 use ndarray::{ArrayViewD, ArrayD, ArrayView, Dim, Array, Array1, par_azip, linalg::Dot};
 
@@ -365,8 +365,9 @@ pub mod rowwise {
 }
 
 
-pub fn axpy(a: Complex64, x: ArrayView<Complex64, Dim<[usize; 1]>>, y: ArrayView<Complex64, Dim<[usize; 1]>>) -> Array<Complex64, Dim<[usize; 1]>> {
-    let mut z : Array<Complex64, Dim<[usize; 1]>> = Array::zeros(x.shape()[0]) ;
-    par_azip!((z in &mut z, &x in &x, &y in &y) *z = a * x + y);
+pub fn axpy(a: Complex64, x: &ArrayView<Complex64, Dim<[usize; 1]>>, y: &ArrayView<Complex64, Dim<[usize; 1]>>) -> Array<Complex64, Dim<[usize; 1]>> {
+    let mut z : Array<MaybeUninit<Complex64>, Dim<[usize; 1]>> = Array::uninit(x.shape()[0]) ;
+    par_azip!((z in &mut z, &x in &*x, &y in &*y) unsafe { *(z.as_mut_ptr()) = a * x + y });
+    let z = unsafe { z.assume_init() } ;
     z
 }
