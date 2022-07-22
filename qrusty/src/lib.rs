@@ -26,7 +26,7 @@ use sprs::{CompressedStorage, TriMatI, CsMatI, kronecker_product};
 use pyo3::PyErr ;
 use pyo3::exceptions::PyException;
 
-mod accel ;
+pub mod accel ;
 pub mod util ;
 pub mod fixtures ;
 pub mod rawio ;
@@ -895,7 +895,7 @@ phase=2
 	let a : Array<Complex64, _> = a.iter().map(|v| { Complex64::new(*v, 0.0) }).collect() ;
 	let b = spmat.dot(&a) ;
 
-	let b2 = accel::rowwise::spmat_dot_densevec(&spmat, &a) ;
+	let b2 = accel::rowwise::spmat_dot_densevec(&spmat, &a.view()) ;
         assert_abs_diff_eq!(b, b2,
 			    epsilon = 1e-7
         ) ;

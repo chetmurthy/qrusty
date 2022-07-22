@@ -192,3 +192,10 @@ def test_slice():
     s = H2[3:8:2]
     print(s)
     assert repr(s) == "[(Pauli('IIXX'), (-0.00170526+0j)), (Pauli('IZII'), (0.18388659+0j)), (Pauli('XXII'), (-0.00170526+0j))]"
+
+def test_spmat_dot_densevec():
+    pIX = Pauli("IX")
+    matIX = pIX.to_matrix()
+    csr_matIX = csr_matrix(pIX.to_matrix())
+    x = np.array([1.0 + 2j, 2.0 + 3j, 3.0 + 4j, 4.0 + 5j])
+    assert np.allclose(spmat_dot_densevec(matIX, x), csr_matIX.dot(x))

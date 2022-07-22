@@ -13,7 +13,8 @@ use std::fs::File;
 use std::io;
 use std::path::Path;
 use pyo3::prelude::*;
-use numpy::{IntoPyArray, PyReadonlyArray1};
+use ndarray::{ArrayViewD, ArrayD, ArrayView, Dim, Array};
+use numpy::{IntoPyArray, PyReadonlyArray1, PyArrayDyn, PyReadonlyArrayDyn, PyArray1};
 use num_complex::Complex64;
 use pyo3::wrap_pyfunction;
 use pyo3::Python;
@@ -420,6 +421,25 @@ impl SparsePauliOp {
 /// A Python module implemented in Rust.
 #[pymodule]
 fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
+
+    // example using complex numbers
+    fn spmat_dot_densevec(spmat: &SpMat, x: ArrayView<Complex64, Dim<[usize; 1]>>) -> PyResult<Array<Complex64, Dim<[usize; 1]>>> {
+        spmat.map_immut(|| Err(PyException::new_err("cannot multiply with an exported sparse matrix")),
+			|spmat| Ok(qrusty::accel::rowwise::spmat_dot_densevec(&spmat, &x)))
+    }
+
+    // wrapper of `conj`
+    #[pyfn(m)]
+    #[pyo3(name = "spmat_dot_densevec")]
+    fn spmat_dot_densevec_py<'py>(
+        py: Python<'py>,
+	spmat: &SpMat,
+        x: PyReadonlyArray1<'_, Complex64>,
+    ) -> PyResult<PyObject> {
+        let y = spmat_dot_densevec(spmat, x.as_array()) ? ;
+	Ok(y.into_pyarray(py).into())
+    }
+
     m.add_class::<Pauli>()?;
     m.add_class::<SparsePauliOp>()?;
     m.add_class::<SpMat>()?;

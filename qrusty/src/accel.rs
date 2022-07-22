@@ -126,13 +126,13 @@ pub mod rowwise {
     use num_complex::Complex64;
     use num_traits::{Zero, MulAdd};
     use rayon::prelude::*;
-    use ndarray::Array;
-    use ndarray::Dim;
+    use ndarray::{Array,ArrayView, Dim, ArrayBase, ViewRepr};
     use ndarray::linalg::Dot;
     use sprs::{TriMatI, CsMatI};
     use std::cmp::min;
     use conv::prelude::* ;
     use rayon_subslice::{ concat_slices, par_concat_slices, unsafe_concat_slices, unsafe_par_concat_slices };
+    use sprs::DenseVector;
 
     use super::UnsafeVectors ;
 
@@ -333,9 +333,9 @@ pub mod rowwise {
 	}
     }
 
-    pub fn spmat_dot_densevec<T>(sp_mat : &CsMatI<T, u64>, v: &Array<T, Dim<[usize; 1]>>) -> Array<T, Dim<[usize; 1]>>
+    pub fn spmat_dot_densevec<T>(sp_mat : &CsMatI<T, u64>, v: &ArrayView<T, Dim<[usize; 1]>>) -> Array<T, Dim<[usize; 1]>>
     where
-	T : Zero + Copy + MulAdd + MulAdd<Output = T> + Send + Sync
+	T : Zero + Copy + MulAdd + MulAdd<Output = T> + Send + Sync,
     {
 	let rows = sp_mat.rows() ;
 	let step = 1024 ;
@@ -350,7 +350,7 @@ pub mod rowwise {
 	    .map(|(lo,hi)| {
 		let v_rc : Vec<T> =
 		    (*lo..*hi).map(|rowind| {
-			sp_mat.outer_view(rowind as usize).unwrap().dot(&v)
+			sp_mat.outer_view(rowind as usize).unwrap().dot(&(*v))
 		    })
 		    .collect();
 		v_rc
