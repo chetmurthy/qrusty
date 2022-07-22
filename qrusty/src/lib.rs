@@ -944,4 +944,24 @@ phase=2
     }
 
 
+    #[test]
+    fn ax() {
+	let rows = 1<<20 ;
+	let x_re : Array<f64, _> = Array::random(rows, Uniform::new(0., 10.));
+	let x_im : Array<f64, _> = Array::random(rows, Uniform::new(0., 10.));
+	let x  : Array<Complex64, _> = x_re.iter()
+	    .zip(x_im.iter())
+	    .map(|(re,im)| Complex64::new(*re, *im))
+	    .collect() ;
+	let a = Complex64::new(1.0, 2.0) ;
+	let z = a * &x ;
+	let z2 = accel::ax(a, &x.view()) ;
+
+        assert_abs_diff_eq!(z, z2,
+			    epsilon = 1e-7
+        ) ;
+	
+    }
+
+
 }

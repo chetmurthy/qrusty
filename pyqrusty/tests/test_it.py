@@ -219,3 +219,14 @@ def test_axpy2():
     y = np.random.random(rows) + np.random.random(rows) * 1j
     a = 0.0 + 1.0j
     assert np.allclose(axpy(a,x,y), a * x + y)
+
+def test_ax():
+    x = np.array([1.0 + 2j, 2.0 + 3j, 3.0 + 4j, 4.0 + 5j])
+    a = 0.0 + 1.0j
+    assert np.allclose(ax(a,x), a * x)
+
+def test_ax2():
+    rows = 1<<20
+    x = np.random.random(rows) + np.random.random(rows) * 1j
+    a = 0.0 + 1.0j
+    assert np.allclose(ax(a,x), a * x)

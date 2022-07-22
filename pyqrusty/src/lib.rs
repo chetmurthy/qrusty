@@ -454,6 +454,18 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
 	Ok(z.into_pyarray(py).into())
     }
 
+    #[pyfn(m)]
+    #[pyo3(name = "ax")]
+    fn ax_py<'py>(
+        py: Python<'py>,
+        a: Complex64,
+        x: PyReadonlyArray1<'_, Complex64>,
+    ) -> PyResult<PyObject> {
+        let x = x.as_array();
+        let z = qrusty::accel::ax(a, &x);
+	Ok(z.into_pyarray(py).into())
+    }
+
     m.add_class::<Pauli>()?;
     m.add_class::<SparsePauliOp>()?;
     m.add_class::<SpMat>()?;
