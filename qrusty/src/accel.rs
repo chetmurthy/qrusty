@@ -10,6 +10,7 @@
 
 use num_complex::Complex64;
 use std::time::Instant;
+use ndarray::{ArrayViewD, ArrayD, ArrayView, Dim, Array, Array1, par_azip, linalg::Dot};
 
 #[derive(Debug, PartialEq)]
 pub struct UnsafeVectors {
@@ -127,7 +128,6 @@ pub mod rowwise {
     use num_traits::{Zero, MulAdd};
     use rayon::prelude::*;
     use ndarray::{Array,ArrayView, Dim, ArrayBase, ViewRepr};
-    use ndarray::linalg::Dot;
     use sprs::{TriMatI, CsMatI};
     use std::cmp::min;
     use conv::prelude::* ;
@@ -362,4 +362,11 @@ pub mod rowwise {
 	return w ;
     }
 
+}
+
+
+pub fn axpy(a: Complex64, x: ArrayView<Complex64, Dim<[usize; 1]>>, y: ArrayView<Complex64, Dim<[usize; 1]>>) -> Array<Complex64, Dim<[usize; 1]>> {
+    let mut z : Array<Complex64, Dim<[usize; 1]>> = Array::zeros(x.shape()[0]) ;
+    par_azip!((z in &mut z, &x in &x, &y in &y) *z = a * x + y);
+    z
 }

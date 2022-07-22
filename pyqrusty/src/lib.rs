@@ -13,7 +13,7 @@ use std::fs::File;
 use std::io;
 use std::path::Path;
 use pyo3::prelude::*;
-use ndarray::{ArrayViewD, ArrayD, ArrayView, Dim, Array};
+use ndarray::{ArrayViewD, ArrayD, ArrayView, Dim, Array, Array1, par_azip};
 use numpy::{IntoPyArray, PyReadonlyArray1, PyArrayDyn, PyReadonlyArrayDyn, PyArray1};
 use num_complex::Complex64;
 use pyo3::wrap_pyfunction;
@@ -440,10 +440,6 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
 	Ok(y.into_pyarray(py).into())
     }
 
-    fn axpy(a: Complex64, x: ArrayView<Complex64, Dim<[usize; 1]>>, y: ArrayView<Complex64, Dim<[usize; 1]>>) -> Array<Complex64, Dim<[usize; 1]>> {
-        a * &x + &y
-    }
-
     #[pyfn(m)]
     #[pyo3(name = "axpy")]
     fn axpy_py<'py>(
@@ -454,7 +450,7 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
     ) -> PyResult<PyObject> {
         let x = x.as_array();
         let y = y.as_array();
-        let z = axpy(a, x, y);
+        let z = qrusty::accel::axpy(a, x, y);
 	Ok(z.into_pyarray(py).into())
     }
 

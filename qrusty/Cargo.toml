@@ -14,7 +14,6 @@ sprs = { git = "https://github.com/sparsemat/sprs.git", branch = "master", featu
 rayon-subslice = { git = "http://github.com/chetmurthy/rayon-subslice.git", branch = "master" }
 regex = "1"
 lazy_static = "1.4.0"
-ndarray = { version = "0.15.3", features = ["approx-0_5"] }
 rayon = "1.5"
 impl_ops = "0.1.1"
 pyo3 = { version = "0.16.5", features = ["extension-module"] }
@@ -24,6 +23,10 @@ approx = { version = "0.5.1", features = ["num-complex"] }
 si-scale = "0.1.5"
 conv = "0.3.3"
 ndarray-rand = "0.14.0"
+
+[dependencies.ndarray]
+version = "^0.15.0"
+features = ["rayon", "approx-0_5"]
 
 [dev-dependencies]
 criterion = "0.3"
