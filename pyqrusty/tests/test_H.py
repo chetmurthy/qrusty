@@ -46,3 +46,7 @@ def test_H6():
     assert np.array_equal(m1.todense(), csr_matrix(H6.to_matrix_mode(mode="")).todense())
     m2 = H6.to_matrix_mode(mode="RowwiseUnsafeChunked/100")
     assert np.array_equal(m1.todense(), csr_matrix(m2).todense())
+
+def test_shape():
+    spmat = H6.to_matrix()
+    assert spmat.shape() == (1<<12, 1<<12)

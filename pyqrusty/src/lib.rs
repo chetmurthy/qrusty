@@ -115,6 +115,11 @@ impl SpMat {
         Ok(SpMat { it : Box::new(Option::Some(sp_mat)) })
     }
 
+    fn shape(&self) -> PyResult<(usize, usize)> {
+        self.map_immut(|| Err(PyException::new_err("SpMat.shape(): matrix is already dropped")),
+                        |spmat| { Ok(spmat.shape()) })
+    }
+
     fn __copy__(&self) -> SpMat {
         SpMat { it : Box::new((&*self.it).clone()) }
     }
