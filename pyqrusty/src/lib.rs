@@ -115,6 +115,15 @@ impl SpMat {
         Ok(SpMat { it : Box::new(Option::Some(sp_mat)) })
     }
 
+    fn diagonal<'py>(
+	&self,
+        py: Python<'py>,
+    ) -> PyResult<PyObject> {
+	let y = self.map_immut(|| Err(PyException::new_err("SpMat.diagonal(): already-exported sparse matrix")),
+			|spmat| Ok(spmat.diag().to_dense())) ? ;
+	Ok(y.into_pyarray(py).into())
+    }
+
     fn shape(&self) -> PyResult<(usize, usize)> {
         self.map_immut(|| Err(PyException::new_err("SpMat.shape(): matrix is already dropped")),
                         |spmat| { Ok(spmat.shape()) })
