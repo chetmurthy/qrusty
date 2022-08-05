@@ -454,6 +454,19 @@ fn precond(
     y
 }
 
+fn precond2(
+    diag : &ArrayView<Complex64, Dim<[usize; 1]>>,
+    dx : &ArrayView<Complex64, Dim<[usize; 1]>>,
+    e : Complex64,
+    tol : f64) -> Array<Complex64, Dim<[usize; 1]>> {
+    let x : Array<Complex64, Dim<[usize; 1]>> =
+	diag.iter()
+	.map(|x| x - e)
+	.collect() ;
+    let y = dx / reg(&x.view(), tol) ;
+    y
+}
+
 
 /// A Python module implemented in Rust.
 #[pymodule]
@@ -516,6 +529,21 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
         let dx = dx.as_array();
         let z = m.map_immut(|| Err(PyException::new_err("cannot call precond with an exported sparse matrix")),
 			    |spmat| Ok(precond(spmat, &dx, e, tol))) ? ;
+	Ok(z.into_pyarray(py).into())
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "precond2")]
+    fn precond2_py<'py>(
+        py: Python<'py>,
+        diag: PyReadonlyArray1<'_, Complex64>,
+        dx: PyReadonlyArray1<'_, Complex64>,
+        e: Complex64,
+	tol: f64,
+    ) -> PyResult<PyObject> {
+        let diag = diag.as_array();
+        let dx = dx.as_array();
+        let z = precond2(&diag, &dx, e, tol) ;
 	Ok(z.into_pyarray(py).into())
     }
 
