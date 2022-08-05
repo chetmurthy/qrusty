@@ -432,6 +432,29 @@ impl SparsePauliOp {
 
 }
 
+
+fn reg(x: &ArrayView<Complex64, Dim<[usize; 1]>>, tol: f64) -> Array<Complex64, Dim<[usize; 1]>> {
+    x.iter()
+	.map(|x| if x.norm() < tol { Complex64::new(tol, 0.0) } else { *x })
+	.collect()
+}
+
+fn precond(
+    spmat : &sprs::CsMatI<Complex64,  u64>,
+    dx : &ArrayView<Complex64, Dim<[usize; 1]>>,
+    e : Complex64,
+    tol : f64) -> Array<Complex64, Dim<[usize; 1]>> {
+    let x : Array<Complex64, Dim<[usize; 1]>> =
+	spmat.diag()
+	.to_dense()
+	.iter()
+	.map(|x| x - e)
+	.collect() ;
+    let y = dx / reg(&x.view(), tol) ;
+    y
+}
+
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -477,6 +500,22 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
     ) -> PyResult<PyObject> {
         let x = x.as_array();
         let z = qrusty::accel::ax(a, &x);
+	Ok(z.into_pyarray(py).into())
+    }
+
+
+    #[pyfn(m)]
+    #[pyo3(name = "precond")]
+    fn precond_py<'py>(
+        py: Python<'py>,
+	m : &SpMat,
+        dx: PyReadonlyArray1<'_, Complex64>,
+        e: Complex64,
+	tol: f64,
+    ) -> PyResult<PyObject> {
+        let dx = dx.as_array();
+        let z = m.map_immut(|| Err(PyException::new_err("cannot call precond with an exported sparse matrix")),
+			    |spmat| Ok(precond(spmat, &dx, e, tol))) ? ;
 	Ok(z.into_pyarray(py).into())
     }
 

@@ -17,7 +17,7 @@ import scipy.sparse as sps
 from pyqrusty import *
 from H_fixtures import *
 
-def timer(msg, f):
+def timeit(msg, f):
     t0 = time.time()
     print("START %s" % (msg,))
     rv = f()
@@ -231,3 +231,41 @@ def test_ax2():
     x = np.random.random(rows) + np.random.random(rows) * 1j
     a = 0.0 + 1.0j
     assert np.allclose(ax(a,x), a * x)
+
+def reg(x,tol):
+    def f(x):
+        if(np.abs(x)<tol): return tol
+        return x
+    f = np.vectorize(f)
+    return f(x)
+
+def precond0(spmat, dx,e, tol=1e-14):
+        print("tol=%s, dx=%s, e=%s" % (tol, dx,e))
+        rv = timeit("precond", lambda: dx/reg(spmat.diagonal()-e,tol))
+        print("rv=%s" % (rv,))
+        return rv
+
+
+tol=1e-14
+dx=np.array([ 0.00000000e+00+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+              0.00000000e+00+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+              -9.57567359e-14+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+              -9.57428581e-14+0.j,  1.74695127e-01+0.j,  0.00000000e+00+0.j,
+              0.00000000e+00+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+              0.00000000e+00+0.j], dtype=complex)
+e=-1.7037077186606393 + 0j
+x0=np.array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+             0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j], dtype=complex)
+rv=np.array([ 0.00000000e+00+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+              0.00000000e+00+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+              -9.91433685e-14+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+              -9.91289999e-14+0.j,  8.88073154e-02+0.j,  0.00000000e+00+0.j,
+              0.00000000e+00+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+              0.00000000e+00+0.j], dtype=complex)
+
+
+def test_precond():
+    spmat = H2.to_matrix()
+    rv0 = precond0(spmat, dx, e, tol)
+    rv1 = precond(spmat, dx, e, tol)
+    assert np.allclose(rv0, rv1)

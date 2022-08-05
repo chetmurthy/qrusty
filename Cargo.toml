@@ -3,7 +3,6 @@
 members = [
     "qrusty",
     "pyqrusty",
-    "pymisc",
 ]
 
 [profile.dev]
