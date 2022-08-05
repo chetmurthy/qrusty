@@ -269,3 +269,9 @@ def test_precond():
     rv0 = precond0(spmat, dx, e, tol)
     rv1 = precond(spmat, dx, e, tol)
     assert np.allclose(rv0, rv1)
+
+def test_precond2():
+    spmat = H2.to_matrix()
+    rv0 = precond0(spmat, dx, e, tol)
+    rv1 = precond2(spmat, dx, e, tol)
+    assert np.allclose(rv0, rv1)
