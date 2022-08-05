@@ -22,3 +22,9 @@ features = ["rayon"]
 
 [package.metadata.maturin]
 python-source = "python"
+
+[profile.dev]
+opt-level = 3
+
+[profile.release]
+opt-level = 3
