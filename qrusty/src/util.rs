@@ -72,7 +72,8 @@ lazy_static! {
     } ;
 
     static ref SignedFloat : String = {
-        let signed_float = conc(vec![ &opt("[-+]"), &UnsignedFloat ]) ;
+        let spaces = star(" ") ;
+        let signed_float = conc(vec![ &opt("[-+]"), &spaces, &UnsignedFloat ]) ;
         signed_float
     } ;
 
@@ -109,8 +110,8 @@ pub fn float64_from_string(s : &str) -> Result<f64,&str> {
     Ok(n)
 }
 
-pub fn complex64_from_string(s : &str) -> Result<Complex64,&str> {
-    let caps = ComplexRE.captures(s).ok_or("error: malformed complex")? ;
+pub fn complex64_from_string(s : &str) -> Result<Complex64,String> {
+    let caps = ComplexRE.captures(s).ok_or(format!("error: malformed complex: {}", s))? ;
     
     let sreal = caps.get(1).map_or("", |m| m.as_str());
     let simag = caps.get(2).map_or("0", |m| m.as_str());
@@ -120,12 +121,12 @@ pub fn complex64_from_string(s : &str) -> Result<Complex64,&str> {
     Ok(Complex64::new(real, imag))
 }
 
-pub fn complex64_list_from_string_list(l : &Vec<&'static str>) -> Vec<Complex64> {
+pub fn complex64_list_from_string_list(l : &Vec<&'static str>) -> Result<Vec<Complex64>, String> {
     let l: Result<Vec<Complex64>, _> = l
         .iter()
         .map(|s| complex64_from_string(s))
         .collect::<Result<Vec<Complex64>, _>>() ;
-    l.unwrap()
+    l
 }
 
 pub fn complex64_to_string(c : Complex64) -> String {
@@ -398,6 +399,7 @@ mod tests {
         assert!(crate::util::complex64_from_string("foo").is_err()) ;
         assert_eq!(crate::util::complex64_from_string("1+2j"), Ok(Complex64::new(1.0,  2.0))) ;
         assert_eq!(crate::util::complex64_from_string("1-2j"), Ok(Complex64::new(1.0,  -2.0))) ;
+        assert_eq!(crate::util::complex64_from_string("-1.56404847e01 + 0.0j"), Ok(Complex64::new(-1.56404847e01,  0.0))) ;
     }
 
     #[test]

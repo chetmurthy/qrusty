@@ -124,6 +124,8 @@ pub fn make_unsafe_vectors(z: &Vec<bool>,
 pub mod rowwise {
     use si_scale::helpers::{seconds, number_};
     use std::time::Instant;
+    use std::iter::Sum;
+    use std::ops::Mul;
     use num_complex::Complex64;
     use num_traits::{Zero, MulAdd};
     use rayon::prelude::*;
@@ -335,8 +337,11 @@ pub mod rowwise {
 
     pub fn spmat_dot_densevec<T>(sp_mat : &CsMatI<T, u64>, v: &ArrayView<T, Dim<[usize; 1]>>) -> Array<T, Dim<[usize; 1]>>
     where
-	T : Zero + Copy + MulAdd + MulAdd<Output = T> + Send + Sync,
+	T : Zero + Sum + Copy + MulAdd + MulAdd<Output = T> + Send + Sync,
+    for<'r> &'r T: Mul<&'r T, Output = T>,
     {
+        let timings = true ;
+        let now = Instant::now();
 	let rows = sp_mat.rows() ;
 	let step = 1024 ;
 	let chunks : Vec<(u64, u64)> =
@@ -345,17 +350,19 @@ pub mod rowwise {
 	    .step_by(step)
             .map(|n| (n,min(n + step as u64, rows as u64)))
             .collect();
+        if timings { println!("AFTER chunks: {}", seconds(now.elapsed().as_secs_f64())) ; }
 	
 	let wchunks : Vec<Vec<T>> = chunks.par_iter()
 	    .map(|(lo,hi)| {
 		let v_rc : Vec<T> =
 		    (*lo..*hi).map(|rowind| {
-			sp_mat.outer_view(rowind as usize).unwrap().dot(&(*v))
+			sp_mat.outer_view(rowind as usize).unwrap().dot_dense(&(*v))
 		    })
 		    .collect();
 		v_rc
 	    })
 	    .collect() ;
+        if timings { println!("AFTER wchunks: {}", seconds(now.elapsed().as_secs_f64())) ; }
 	
 	let w_slices : Vec<&[T]> = wchunks.iter().map(|v| { &v[..] }).collect()  ;
 	let w = Array::from_vec(unsafe_par_concat_slices(&w_slices[..])) ;

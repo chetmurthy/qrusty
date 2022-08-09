@@ -23,6 +23,7 @@ approx = { version = "0.5.1", features = ["num-complex"] }
 si-scale = "0.1.5"
 conv = "0.3.3"
 ndarray-rand = "0.14.0"
+rulinalg = "0.4.2"
 
 [dependencies.ndarray]
 version = "^0.15.0"
@@ -56,6 +57,10 @@ src = "src/bin/main.rs"
 [[bin]]
 name = "main2"
 src = "src/bin/main2.rs"
+
+[[bin]]
+name = "main3"
+src = "src/bin/main3.rs"
 
 [[bin]]
 name = "test1"
