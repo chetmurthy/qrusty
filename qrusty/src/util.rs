@@ -73,7 +73,7 @@ lazy_static! {
 
     static ref SignedFloat : String = {
         let spaces = star(" ") ;
-        let signed_float = conc(vec![ &opt("[-+]"), &spaces, &UnsignedFloat ]) ;
+        let signed_float = conc(vec![ &capt(&opt("[-+]")), &spaces, &capt(&UnsignedFloat) ]) ;
         signed_float
     } ;
 
@@ -83,10 +83,10 @@ lazy_static! {
         let spaces = star(" ") ;
         /* {SFLOAT} (({SFLOAT}J)? | J)? */
         let complex = conc(vec![&spaces,
-                                &capt(&opt(&SignedFloat)),
+                                &opt(&SignedFloat),
                                 &spaces,
                                 &opt(&disj(vec![
-                                    &conc(vec![&capt(&SignedFloat), "j"]),
+                                    &conc(vec![&SignedFloat, "j"]),
                                     "j"
                                 ]))]) ;
         complex
@@ -101,24 +101,32 @@ lazy_static! {
     } ;
 }
 
-pub fn float64_from_string(s : &str) -> Result<f64,&str> {
-    let caps = FloatRE.captures(s).ok_or("error: malformed float")? ;
+pub fn float64_from_string(s : &str) -> Result<f64,String> {
+    let caps = FloatRE.captures(s).ok_or(format!("error: malformed float: {}", s))? ;
     
-    let s = caps.get(0).map_or("", |m| m.as_str());
+    let signop : &str = caps.get(1).map_or("+", |m| m.as_str());
+    let s : &str = caps.get(2).map_or("", |m| m.as_str());
 
-    let n : f64 = s.parse().unwrap() ;
-    Ok(n)
+    let n : f64 = s.parse().map_err(|_| format!("error: malformed float: {}", s)) ? ;
+    Ok(if signop != "-" { n } else { - n })
+}
+
+pub fn parse_complex64<'a>(s : &'a str) -> Result<(bool, &'a str, bool, &'a str), String> {
+    let caps = ComplexRE.captures(s).ok_or(format!("error: malformed complex: {}", s))? ;
+    
+    let signop1 : &str = caps.get(1).map_or("+", |m| m.as_str());
+    let sreal = caps.get(2).map_or("", |m| m.as_str());
+    let signop2 : &str = caps.get(3).map_or("+", |m| m.as_str());
+    let simag = caps.get(4).map_or("0", |m| m.as_str());
+    Ok(((signop1 != "-"), sreal, (signop2 != "-"), simag))
 }
 
 pub fn complex64_from_string(s : &str) -> Result<Complex64,String> {
-    let caps = ComplexRE.captures(s).ok_or(format!("error: malformed complex: {}", s))? ;
-    
-    let sreal = caps.get(1).map_or("", |m| m.as_str());
-    let simag = caps.get(2).map_or("0", |m| m.as_str());
-    let real : f64 = sreal.parse().unwrap() ;
-    let imag : f64 = simag.parse().unwrap() ;
-
-    Ok(Complex64::new(real, imag))
+    let (resign, res,  imsign, ims) = parse_complex64(s) ? ;
+    let real : f64 = float64_from_string(res) ? ;
+    let imag : f64 = float64_from_string(ims) ? ;
+    Ok(Complex64::new(if resign { real } else { - real },
+		      if imsign { imag } else { - imag }))
 }
 
 pub fn complex64_list_from_string_list(l : &Vec<&'static str>) -> Result<Vec<Complex64>, String> {
@@ -388,6 +396,10 @@ mod tests {
     #[test]
     fn test_parse_f64() {
         assert_eq!(crate::util::float64_from_string("0"), Ok(0.0)) ;
+        assert_eq!(crate::util::float64_from_string("-0"), Ok(-0.0)) ;
+        assert_eq!(crate::util::float64_from_string("+0"), Ok(0.0)) ;
+        assert_eq!(crate::util::float64_from_string("-1.0"), Ok(-1.0)) ;
+        assert_eq!(crate::util::float64_from_string("+1.0"), Ok(1.0)) ;
         assert_eq!(crate::util::float64_from_string("1.0"), Ok(1.0)) ;
         assert!(crate::util::float64_from_string("foo").is_err()) ;
     }
@@ -395,8 +407,10 @@ mod tests {
     #[test]
     fn test_parse_complex64() {
         assert_eq!(crate::util::complex64_from_string("0"), Ok(Complex64::new(0.0,  0.0))) ;
+        assert_eq!(crate::util::parse_complex64("1.0"), Ok((true, "1.0", true,  "0"))) ;
         assert_eq!(crate::util::complex64_from_string("1.0"), Ok(Complex64::new(1.0,  0.0))) ;
         assert!(crate::util::complex64_from_string("foo").is_err()) ;
+        assert_eq!(crate::util::parse_complex64("1+2j"), Ok((true, "1", true,  "2"))) ;
         assert_eq!(crate::util::complex64_from_string("1+2j"), Ok(Complex64::new(1.0,  2.0))) ;
         assert_eq!(crate::util::complex64_from_string("1-2j"), Ok(Complex64::new(1.0,  -2.0))) ;
         assert_eq!(crate::util::complex64_from_string("-1.56404847e01 + 0.0j"), Ok(Complex64::new(-1.56404847e01,  0.0))) ;
