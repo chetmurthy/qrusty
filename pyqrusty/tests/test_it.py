@@ -273,5 +273,5 @@ def test_precond():
 def test_precond2():
     spmat = H2.to_matrix()
     rv0 = precond0(spmat, dx, e, tol)
-    rv1 = precond2(spmat, dx, e, tol)
+    rv1 = precond2(spmat.diagonal(), dx, e, tol)
     assert np.allclose(rv0, rv1)
