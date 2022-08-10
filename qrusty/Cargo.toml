@@ -59,8 +59,12 @@ name = "main2"
 src = "src/bin/main2.rs"
 
 [[bin]]
-name = "main3"
-src = "src/bin/main3.rs"
+name = "main11"
+src = "src/bin/main11.rs"
+
+[[bin]]
+name = "main10"
+src = "src/bin/main10.rs"
 
 [[bin]]
 name = "test1"
