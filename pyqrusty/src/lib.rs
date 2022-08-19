@@ -490,6 +490,34 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
 	Ok(y.into_pyarray(py).into())
     }
 
+    // example using complex numbers
+    #[pyfn(m)]
+    #[pyo3(name = "a_spmat_p_b_spmat")]
+    fn a_spmat_p_b_spmat(
+        a: Complex64,
+	spmat1: &SpMat,
+        b: Complex64,
+	spmat2: &SpMat,
+    ) -> PyResult<SpMat> {
+        spmat1.map_immut(
+	    || Err(PyException::new_err("cannot a*m1+b*m2 with an exported sparse matrix (first argument)")),
+	    |spmat1|
+	    spmat2.map_immut(
+		|| Err(PyException::new_err("cannot a*m1+b*m2 with an exported sparse matrix (second argument)")),
+		|spmat2| {
+		    if spmat1.shape() != spmat2.shape() {
+			return Err(PyException::new_err(format!("cannot a*m1+b*m2 with matrices with differing shapes ({:?} != {:?})", spmat1.shape(), spmat2.shape()))) ;
+		    }
+		    let mut am1 = spmat1.clone() ;
+		    am1.scale(a) ;
+		    let mut am2 = spmat2.clone() ;
+		    am2.scale(b) ;
+		    let rv = &am1 + &am2 ;
+		    Ok(SpMat::new_from_csmatrix(rv))
+		})
+	)
+    }
+
     #[pyfn(m)]
     #[pyo3(name = "axpy")]
     fn axpy_py<'py>(

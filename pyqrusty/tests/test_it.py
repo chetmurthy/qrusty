@@ -110,6 +110,27 @@ def test_add():
     assert np.array_equal(l.todense(), (I+X))
 
 
+def test_interpolate():
+    pI = Pauli("I")
+    pX = Pauli("X")
+    matI = pI.to_matrix()
+    matX = pX.to_matrix()
+    a = complex(1.0)
+    b = complex(1.0j)
+    matsum = a_spmat_p_b_spmat(a, matI, b, matX)
+    l = csr_matrix(matsum)
+    assert np.array_equal(l.todense(), (a * I + b * X))
+
+def test_interpolate_wrong_sizes():
+    pI = Pauli("I")
+    pX = Pauli("XI")
+    matI = pI.to_matrix()
+    matX = pX.to_matrix()
+    a = complex(1.0)
+    b = complex(1.0j)
+    with pytest.raises(Exception):
+        a_spmat_p_b_spmat(a, matI, b, matX)
+
 def test_sub():
     pI = Pauli("I")
     matI = pI.to_matrix()
@@ -273,5 +294,5 @@ def test_precond():
 def test_precond2():
     spmat = H2.to_matrix()
     rv0 = precond0(spmat, dx, e, tol)
-    rv1 = precond2(spmat, dx, e, tol)
+    rv1 = precond2(spmat.diagonal(), dx, e, tol)
     assert np.allclose(rv0, rv1)
