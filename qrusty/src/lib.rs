@@ -919,6 +919,32 @@ phase=2
     }
 
     #[test]
+    fn axpby() {
+	let rows = 1<<20 ;
+	let x_re : Array<f64, _> = Array::random(rows, Uniform::new(0., 10.));
+	let x_im : Array<f64, _> = Array::random(rows, Uniform::new(0., 10.));
+	let x  : Array<Complex64, _> = x_re.iter()
+	    .zip(x_im.iter())
+	    .map(|(re,im)| Complex64::new(*re, *im))
+	    .collect() ;
+	let y_re : Array<f64, _> = Array::random(rows, Uniform::new(0., 10.));
+	let y_im : Array<f64, _> = Array::random(rows, Uniform::new(0., 10.));
+	let y  : Array<Complex64, _> = y_re.iter()
+	    .zip(y_im.iter())
+	    .map(|(re,im)| Complex64::new(*re, *im))
+	    .collect() ;
+	let a = Complex64::new(1.0, 2.0) ;
+	let b = Complex64::new(3.0, 4.0) ;
+	let z = a * &x + b * &y ;
+	let z2 = accel::axpby(a, &x.view(), b, &y.view()) ;
+
+        assert_abs_diff_eq!(z, z2,
+			    epsilon = 1e-7
+        ) ;
+	
+    }
+
+    #[test]
     fn axpy() {
 	let rows = 1<<20 ;
 	let x_re : Array<f64, _> = Array::random(rows, Uniform::new(0., 10.));

@@ -371,6 +371,13 @@ pub mod rowwise {
 
 }
 
+pub fn axpby(a: Complex64, x: &ArrayView<Complex64, Dim<[usize; 1]>>, b: Complex64, y: &ArrayView<Complex64, Dim<[usize; 1]>>) -> Array<Complex64, Dim<[usize; 1]>> {
+    let mut z : Array<MaybeUninit<Complex64>, Dim<[usize; 1]>> = Array::uninit(x.shape()[0]) ;
+    par_azip!((z in &mut z, &x in &*x, &y in &*y) unsafe { *(z.as_mut_ptr()) = a * x + b * y });
+    let z = unsafe { z.assume_init() } ;
+    z
+}
+
 pub fn axpy(a: Complex64, x: &ArrayView<Complex64, Dim<[usize; 1]>>, y: &ArrayView<Complex64, Dim<[usize; 1]>>) -> Array<Complex64, Dim<[usize; 1]>> {
     let mut z : Array<MaybeUninit<Complex64>, Dim<[usize; 1]>> = Array::uninit(x.shape()[0]) ;
     par_azip!((z in &mut z, &x in &*x, &y in &*y) unsafe { *(z.as_mut_ptr()) = a * x + y });

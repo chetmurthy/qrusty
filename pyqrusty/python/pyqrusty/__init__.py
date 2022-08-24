@@ -9,7 +9,7 @@
 # that they have been altered from the originals.
 
 from .pyqrusty import Pauli, SparsePauliOp, SpMat, spmat_dot_densevec, \
-                      axpy, ax, precond, precond2, a_spmat_p_b_spmat
+                      axpby, axpy, ax, precond, precond2, a_spmat_p_b_spmat
 
 def csr_matrix(m):
     (shape, data, indices, indptr) = m.export()

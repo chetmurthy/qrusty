@@ -519,6 +519,21 @@ fn pyqrusty(_py: Python, m: &PyModule) -> PyResult<()> {
     }
 
     #[pyfn(m)]
+    #[pyo3(name = "axpby")]
+    fn axpby_py<'py>(
+        py: Python<'py>,
+        a: Complex64,
+        x: PyReadonlyArray1<'_, Complex64>,
+        b: Complex64,
+        y: PyReadonlyArray1<'_, Complex64>,
+    ) -> PyResult<PyObject> {
+        let x = x.as_array();
+        let y = y.as_array();
+        let z = qrusty::accel::axpby(a, &x, b, &y);
+	Ok(z.into_pyarray(py).into())
+    }
+
+    #[pyfn(m)]
     #[pyo3(name = "axpy")]
     fn axpy_py<'py>(
         py: Python<'py>,
