@@ -340,7 +340,7 @@ pub mod rowwise {
 	T : Zero + Sum + Copy + MulAdd + MulAdd<Output = T> + Send + Sync,
     for<'r> &'r T: Mul<&'r T, Output = T>,
     {
-        let timings = true ;
+        let timings = false ;
         let now = Instant::now();
 	let rows = sp_mat.rows() ;
 	let step = 1024 ;
@@ -350,7 +350,7 @@ pub mod rowwise {
 	    .step_by(step)
             .map(|n| (n,min(n + step as u64, rows as u64)))
             .collect();
-        // if timings { println!("AFTER chunks: {}", seconds(now.elapsed().as_secs_f64())) ; }
+        if timings { println!("AFTER chunks: {}", seconds(now.elapsed().as_secs_f64())) ; }
 	
 	let wchunks : Vec<Vec<T>> = chunks.par_iter()
 	    .map(|(lo,hi)| {
@@ -362,7 +362,7 @@ pub mod rowwise {
 		v_rc
 	    })
 	    .collect() ;
-        // if timings { println!("AFTER wchunks: {}", seconds(now.elapsed().as_secs_f64())) ; }
+        if timings { println!("AFTER wchunks: {}", seconds(now.elapsed().as_secs_f64())) ; }
 	
 	let w_slices : Vec<&[T]> = wchunks.iter().map(|v| { &v[..] }).collect()  ;
 	let w = Array::from_vec(unsafe_par_concat_slices(&w_slices[..])) ;
