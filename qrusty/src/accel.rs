@@ -340,7 +340,7 @@ pub mod rowwise {
 	T : Zero + Sum + Copy + MulAdd + MulAdd<Output = T> + Send + Sync,
     for<'r> &'r T: Mul<&'r T, Output = T>,
     {
-        let timings = true ;
+        let timings = false ;
         let now = Instant::now();
 	let rows = sp_mat.rows() ;
 	let step = 1024 ;
