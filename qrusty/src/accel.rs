@@ -268,8 +268,8 @@ pub mod rowwise {
                                        step : usize,
     ) -> UnsafeVectors {
 
-        let debug = true ;
-        let timings = true ;
+        let debug = false ;
+        let timings = false ;
 
         let now = Instant::now();
 
